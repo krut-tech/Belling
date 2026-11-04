@@ -1,10 +1,33 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'sync_remote.dart';
 
-class SupabaseSyncRemote implements SyncRemote {
+class SupabaseSyncRemote implements SyncRemote, SyncRemoteExtras {
   final SupabaseClient client;
 
   SupabaseSyncRemote(this.client);
+
+  @override
+  bool get isReady => client.auth.currentSession != null;
+
+  @override
+  Future<void> insertPayment({
+    required Map<String, dynamic> payment,
+    Map<String, dynamic>? party,
+  }) async {
+    await _withAuthRetry(() async {
+      if (party != null) {
+        await _upsertMutableRowRaw('parties', party);
+      }
+      await client.from('payments').upsert(payment, onConflict: 'id', ignoreDuplicates: true);
+    });
+  }
+
+  @override
+  Future<void> insertStockMovement(Map<String, dynamic> stockMovement) async {
+    await _withAuthRetry(() async {
+      await client.from('stock_movements').upsert(stockMovement, onConflict: 'id', ignoreDuplicates: true);
+    });
+  }
 
   @override
   Future<void> upsertBusiness(Map<String, dynamic> data) async {
@@ -78,7 +101,7 @@ class SupabaseSyncRemote implements SyncRemote {
         'id': commandId,
         'business_id': business['id'],
         'device_id': device['id'],
-        'created_at': DateTime.now().toUtc().toIso8601String(),
+        'command_type': 'issue_document',
       }, onConflict: 'id', ignoreDuplicates: true);
     });
   }

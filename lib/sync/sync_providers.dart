@@ -1,4 +1,5 @@
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -29,6 +30,17 @@ final pushWorkerProvider = Provider<PushWorker>((ref) {
   worker.start();
   ref.onDispose(() => worker.stop());
   return worker;
+});
+
+/// Starts the push worker as soon as the app is running, so queued commands
+/// are sent without the user opening the sync screen. Never throws: sync is
+/// optional and must not stop the app (e.g. Supabase could not initialise).
+final syncBootstrapProvider = Provider<void>((ref) {
+  try {
+    ref.watch(pushWorkerProvider);
+  } catch (e) {
+    debugPrint('Background sync not started: $e');
+  }
 });
 
 final outboxCommandsStreamProvider = StreamProvider<List<OutboxCommand>>((ref) {

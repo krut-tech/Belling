@@ -45,7 +45,12 @@ class _BackupAndSyncPageState extends ConsumerState<BackupAndSyncPage> {
       ExistingBusinessChoice? choice;
 
       if (_isSignUpMode) {
-        await authService.signUp(email, password);
+        final res = await authService.signUp(email, password);
+        if (res.session == null) {
+          // "Confirm email" is on: there is no session until the mail link is opened.
+          setState(() => _errorMessage = 'Account created. Open the confirmation email, then come back and sign in.');
+          return;
+        }
       } else {
         await authService.signIn(email, password);
       }
@@ -94,10 +99,16 @@ class _BackupAndSyncPageState extends ConsumerState<BackupAndSyncPage> {
                   final nav = Navigator.of(ctx);
                   final messenger = ScaffoldMessenger.of(ctx);
                   nav.pop();
-                  await authService.adoptServerBusiness(choice.serverBusiness);
-                  messenger.showSnackBar(
-                    SnackBar(content: Text('Switched to existing business "$busName"')),
-                  );
+                  try {
+                    await authService.adoptServerBusiness(choice.serverBusiness);
+                    messenger.showSnackBar(
+                      SnackBar(content: Text('Switched to existing business "$busName"')),
+                    );
+                  } catch (e) {
+                    messenger.showSnackBar(
+                      SnackBar(content: Text('Could not switch business: $e')),
+                    );
+                  }
                 },
                 child: const Text('Use my existing business'),
               ),

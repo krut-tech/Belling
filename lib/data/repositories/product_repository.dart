@@ -149,9 +149,10 @@ class ProductRepository {
         );
 
         if (trackStock && openingStockMilli != 0) {
+          final openingMovementId = const Uuid().v4();
           await db.into(db.stockMovements).insert(
             StockMovementsCompanion.insert(
-              id: const Uuid().v4(),
+              id: openingMovementId,
               businessId: businessId,
               productId: newId,
               qtyMilli: openingStockMilli,
@@ -159,6 +160,12 @@ class ProductRepository {
               documentId: const Value.absent(),
               createdAt: now,
             ),
+          );
+          await db.enqueueOutboxCommand(
+            businessId: businessId,
+            deviceId: deviceId,
+            commandType: 'push_stock_movement',
+            payload: {'stock_movement_id': openingMovementId},
           );
         }
 

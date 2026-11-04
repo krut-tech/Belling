@@ -7,7 +7,10 @@ import 'repositories/product_repository.dart';
 
 final databaseProvider = Provider<AppDatabase>((ref) {
   final db = AppDatabase();
-  ref.onDispose(() => db.close());
+  // close() may already have been called (restore closes the database itself)
+  ref.onDispose(() {
+    db.close().catchError((Object _) {});
+  });
   return db;
 });
 

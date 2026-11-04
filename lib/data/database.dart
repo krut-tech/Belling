@@ -259,7 +259,6 @@ class PaymentParam {
 
 Map<String, dynamic> businessToPayload(Business b) => {
       'id': b.id,
-      'business_id': b.businessId,
       'name': b.name,
       'gstin': b.gstin,
       'state_code': b.stateCode,
@@ -347,6 +346,25 @@ class AppDatabase extends _$AppDatabase {
         lastError: const Value.absent(),
       ),
     );
+  }
+
+  /// Drops the immutability triggers. Only for one-time maintenance inside a
+  /// transaction (rekey, adopting a server business); always call
+  /// [createTriggers] again before the transaction ends.
+  Future<void> dropTriggers() async {
+    const names = [
+      'prevent_issued_doc_update',
+      'prevent_issued_doc_delete',
+      'prevent_doc_lines_update',
+      'prevent_doc_lines_delete',
+      'prevent_payments_update',
+      'prevent_payments_delete',
+      'prevent_stock_movements_update',
+      'prevent_stock_movements_delete',
+    ];
+    for (final name in names) {
+      await customStatement('DROP TRIGGER IF EXISTS $name;');
+    }
   }
 
   Future<void> createTriggers() async {
@@ -517,8 +535,11 @@ class AppDatabase extends _$AppDatabase {
   Future<void> ensureBootstrapData() async {
     final now = DateTime.now();
 
-    final existingBusiness = await (select(businesses)..where((t) => t.id.equals('local-business'))).getSingleOrNull();
-    if (existingBusiness == null) {
+    // Seed only when there is NO business at all. After the first sign-in the
+    // local ids are rekeyed to UUIDs; looking for 'local-business' here would
+    // create a second, empty business on every app start.
+    final anyBusiness = await (select(businesses)..limit(1)).get();
+    if (anyBusiness.isEmpty) {
       await into(businesses).insertOnConflictUpdate(
         BusinessesCompanion.insert(
           id: 'local-business',
@@ -531,12 +552,13 @@ class AppDatabase extends _$AppDatabase {
       );
     }
 
-    final existingDevice = await (select(devices)..where((t) => t.id.equals('local-device'))).getSingleOrNull();
-    if (existingDevice == null) {
+    final anyDevice = await (select(devices)..limit(1)).get();
+    if (anyDevice.isEmpty) {
+      final ownerBusiness = await (select(businesses)..limit(1)).getSingle();
       await into(devices).insertOnConflictUpdate(
         DevicesCompanion.insert(
           id: 'local-device',
-          businessId: 'local-business',
+          businessId: ownerBusiness.id,
           name: 'POS Terminal 1',
           seriesPrefix: 'A',
           createdAt: now,
@@ -557,6 +579,8 @@ class AppDatabase extends _$AppDatabase {
   }) async {
     return transaction(() async {
       final now = DateTime.now();
+      final existingBusinessRow =
+          await (select(businesses)..where((t) => t.id.equals(businessId))).getSingleOrNull();
 
       await into(businesses).insertOnConflictUpdate(
         BusinessesCompanion(
@@ -569,7 +593,7 @@ class AppDatabase extends _$AppDatabase {
           upiId: Value(upiId),
           invoiceTerms: Value(invoiceTerms),
           updatedAt: Value(now),
-          createdAt: Value(now),
+          createdAt: Value(existingBusinessRow?.createdAt ?? now),
         ),
       );
 
@@ -836,6 +860,9 @@ class AppDatabase extends _$AppDatabase {
       if (origDoc.status == 'cancelled') {
         throw StateError('Document is already cancelled');
       }
+      if (origDoc.docType != 'invoice') {
+        throw StateError('Only invoices can be cancelled');
+      }
 
       final origLines = await (select(documentLines)..where((tbl) => tbl.documentId.equals(documentId))).get();
       final origPayments = await (select(payments)..where((tbl) => tbl.documentId.equals(documentId))).get();
@@ -860,7 +887,8 @@ class AppDatabase extends _$AppDatabase {
       final buyer = origDoc.partyId != null
           ? await (select(parties)..where((tbl) => tbl.id.equals(origDoc.partyId!))).getSingleOrNull()
           : null;
-      final isInterState = buyer != null && buyer.stateCode != seller.stateCode;
+      // Mirror the original invoice: IGST on the invoice means inter-state.
+      final isInterState = origDoc.igstPaise != 0;
 
       final creditNoteLines = origLines
           .map((l) => IssueDocumentLineParam(

@@ -48,8 +48,9 @@ class RekeyService {
     final nowEpoch = now.millisecondsSinceEpoch ~/ 1000;
 
     await db.transaction(() async {
-      // 1. Temporarily disable foreign keys and drop immutability triggers
-      await db.customStatement('PRAGMA foreign_keys = OFF;');
+      // 1. PRAGMA foreign_keys is a no-op inside a transaction, so defer the
+      // foreign key checks to COMMIT instead, and drop the immutability triggers
+      await db.customStatement('PRAGMA defer_foreign_keys = ON;');
       await db.customStatement('DROP TRIGGER IF EXISTS prevent_issued_doc_update;');
       await db.customStatement('DROP TRIGGER IF EXISTS prevent_issued_doc_delete;');
       await db.customStatement('DROP TRIGGER IF EXISTS prevent_doc_lines_update;');
@@ -151,7 +152,6 @@ class RekeyService {
 
       // 13. Re-create all 8 immutability triggers
       await db.createTriggers();
-      await db.customStatement('PRAGMA foreign_keys = ON;');
 
       // 14. Mark business_uuid_migrated in app_settings
       await db.into(db.appSettingsTable).insertOnConflictUpdate(

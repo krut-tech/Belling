@@ -251,7 +251,15 @@ class PartyRepository {
       createdAt: now,
     );
 
-    await db.into(db.payments).insert(companion);
+    await db.transaction(() async {
+      await db.into(db.payments).insert(companion);
+      await db.enqueueOutboxCommand(
+        businessId: businessId,
+        deviceId: deviceId,
+        commandType: 'push_payment',
+        payload: {'payment_id': paymentId},
+      );
+    });
 
     final inserted = await (db.select(db.payments)..where((t) => t.id.equals(paymentId))).getSingleOrNull();
     if (inserted == null) {

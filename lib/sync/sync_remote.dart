@@ -18,3 +18,22 @@ abstract class SyncRemote {
 
   Future<void> cancelDocument(String documentId);
 }
+
+/// Optional capabilities of a remote. Kept in a separate interface so existing
+/// [SyncRemote] implementations (and test fakes) keep compiling.
+abstract class SyncRemoteExtras {
+  /// False while there is no signed-in session: nothing may be pushed (and
+  /// nothing may be marked rejected) until the user signs in.
+  bool get isReady;
+
+  /// Appends a payment that is not part of an issue_document command
+  /// (receive payment, advance). [party] is upserted first when present.
+  Future<void> insertPayment({
+    required Map<String, dynamic> payment,
+    Map<String, dynamic>? party,
+  });
+
+  /// Appends a stock movement that is not part of an issue_document command
+  /// (opening stock).
+  Future<void> insertStockMovement(Map<String, dynamic> stockMovement);
+}

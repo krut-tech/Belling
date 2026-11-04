@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:drift/drift.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -19,6 +20,8 @@ class PushWorker {
   bool _isPushing = false;
   int _backoffSeconds = 5;
   StreamSubscription? _connectivitySubscription;
+  StreamSubscription? _outboxSubscription;
+  final Set<String> _knownPendingIds = <String>{};
 
   PushWorker({
     required this.db,
@@ -37,10 +40,26 @@ class PushWorker {
       triggerPush();
     });
 
+    // Push automatically soon after a NEW command is queued (an invoice was
+    // issued, an item was saved, ...). Only new ids trigger a push so that a
+    // failing command is retried by the backoff timer, not on every DB change.
+    _outboxSubscription = (db.select(db.outboxCommands)
+          ..where((t) => t.status.equals('pending')))
+        .watch()
+        .listen((rows) {
+      final ids = rows.map((r) => r.id).toSet();
+      final hasNew = ids.any((id) => !_knownPendingIds.contains(id));
+      _knownPendingIds
+        ..clear()
+        ..addAll(ids);
+      if (hasNew) triggerDebouncedPush();
+    });
+
     triggerPush();
   }
 
   void stop() {
+    _outboxSubscription?.cancel();
     _connectivitySubscription?.cancel();
     _periodicTimer?.cancel();
     _debounceTimer?.cancel();
@@ -61,12 +80,20 @@ class PushWorker {
 
   Future<void> pushPending() async {
     if (_isPushing) return;
+    // Not signed in: leave everything pending. Pushing without a session would
+    // be refused by row level security and wrongly marked as rejected.
+    final readyCheck = remote;
+    if (readyCheck is SyncRemoteExtras && !readyCheck.isReady) return;
     _isPushing = true;
 
     try {
       final pendingCommands = await (db.select(db.outboxCommands)
             ..where((t) => t.status.equals('pending'))
-            ..orderBy([(t) => OrderingTerm.asc(t.createdAt)]))
+            ..orderBy([
+              (t) => OrderingTerm.asc(t.createdAt),
+              // createdAt has 1-second resolution: keep insertion order inside the same second
+              (t) => OrderingTerm.asc(const CustomExpression<int>('rowid')),
+            ]))
           .get();
 
       for (final cmd in pendingCommands) {
@@ -105,7 +132,21 @@ class PushWorker {
     }
   }
 
+  /// Postgres / PostgREST codes that mean "try again later" (connection, pool,
+  /// schema cache reload, HTTP 5xx, resource limits). Every other code (unique
+  /// or foreign key violation, RLS 42501, missing column PGRST204, a trigger
+  /// exception P0001, ...) is a permanent rejection: retrying cannot fix it.
+  bool _isTransientCode(String code) {
+    if (const {'PGRST000', 'PGRST001', 'PGRST002', 'PGRST003'}.contains(code)) {
+      return true;
+    }
+    return code.startsWith('5') || code.startsWith('08') || code.startsWith('XX');
+  }
+
   bool _isClientOrConstraintError(dynamic e) {
+    // Session problems are fixed by signing in again / refreshing: keep pending.
+    if (e is AuthException) return false;
+    if (e is SocketException || e is TimeoutException) return false;
     if (e is PostgrestException) {
       final code = e.code ?? '';
       final msg = e.message.toLowerCase();
@@ -119,9 +160,13 @@ class PushWorker {
           msg.contains('forbidden')) {
         return false;
       }
-      if (code.startsWith('23') || code.startsWith('4')) {
-        return true;
+      if (code.isNotEmpty) {
+        return !_isTransientCode(code);
       }
+    }
+    // A bug in our own data (missing row, bad argument) will never fix itself.
+    if (e is StateError || e is ArgumentError || e is UnimplementedError) {
+      return true;
     }
     final msg = e.toString().toLowerCase();
     if (msg.contains('jwt') ||
@@ -216,6 +261,39 @@ class PushWorker {
         );
         break;
 
+      case 'push_payment':
+        final paymentId = payload['payment_id'] as String;
+        final pay = await (db.select(db.payments)..where((t) => t.id.equals(paymentId))).getSingleOrNull();
+        if (pay == null) {
+          throw StateError('Payment $paymentId not found for push_payment');
+        }
+        final payRemote = remote;
+        if (payRemote is! SyncRemoteExtras) {
+          throw UnimplementedError('This remote cannot push standalone payments');
+        }
+        Party? payParty;
+        if (pay.partyId != null) {
+          payParty = await (db.select(db.parties)..where((t) => t.id.equals(pay.partyId!))).getSingleOrNull();
+        }
+        await payRemote.insertPayment(
+          payment: _payMap(pay),
+          party: payParty != null ? _partyMap(payParty) : null,
+        );
+        break;
+
+      case 'push_stock_movement':
+        final movementId = payload['stock_movement_id'] as String;
+        final movement = await (db.select(db.stockMovements)..where((t) => t.id.equals(movementId))).getSingleOrNull();
+        if (movement == null) {
+          throw StateError('Stock movement $movementId not found for push_stock_movement');
+        }
+        final stockRemote = remote;
+        if (stockRemote is! SyncRemoteExtras) {
+          throw UnimplementedError('This remote cannot push standalone stock movements');
+        }
+        await stockRemote.insertStockMovement(_smMap(movement));
+        break;
+
       default:
         throw UnimplementedError('Unknown command type: ${cmd.commandType}');
     }
@@ -223,7 +301,6 @@ class PushWorker {
 
   Map<String, dynamic> _busMap(Business b) => {
         'id': b.id,
-        'business_id': b.businessId,
         'name': b.name,
         'gstin': b.gstin,
         'state_code': b.stateCode,

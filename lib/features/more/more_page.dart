@@ -157,14 +157,28 @@ class _BackupRestoreSectionState extends ConsumerState<_BackupRestoreSection> {
 
     final backupPath = result.files.first.path!;
 
+    // Validate the file BEFORE asking, and show what it contains.
+    BackupInfo info;
+    try {
+      info = await BackupRestoreService.inspectBackupFile(backupPath);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Restore failed: $e')),
+        );
+      }
+      return;
+    }
+
     if (!mounted) return;
 
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Confirm Restore'),
-        content: const Text(
-          'Restoring from a backup will replace your current local data. Are you sure you want to proceed?',
+        content: Text(
+          'This backup has ${info.invoiceCount} invoices and ${info.partyCount} parties. '
+          'Restoring replaces ALL data currently on this phone. Continue?',
         ),
         actions: [
           TextButton(
@@ -186,6 +200,8 @@ class _BackupRestoreSectionState extends ConsumerState<_BackupRestoreSection> {
     try {
       final db = ref.read(databaseProvider);
       await BackupRestoreService.restoreBackup(db, backupPath);
+      // restoreBackup closed the old connection: open a fresh one for the whole app
+      ref.invalidate(databaseProvider);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

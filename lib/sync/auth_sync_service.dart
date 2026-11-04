@@ -48,18 +48,12 @@ class AuthSyncService {
   Future<AuthResponse> signUp(String email, String password) async {
     final client = _requireClient();
     final res = await client.auth.signUp(email: email, password: password);
-    if (res.user != null) {
-      await onSignedIn();
-    }
     return res;
   }
 
   Future<AuthResponse> signIn(String email, String password) async {
     final client = _requireClient();
     final res = await client.auth.signInWithPassword(email: email, password: password);
-    if (res.user != null) {
-      await onSignedIn();
-    }
     return res;
   }
 
@@ -94,6 +88,9 @@ class AuthSyncService {
   Future<ExistingBusinessChoice?> onSignedIn() async {
     final client = supabaseClient;
     if (client == null) return null;
+    // Sign-up with "Confirm email" on gives a user but no session yet: nothing
+    // can be created on the server until the user signs in.
+    if (client.auth.currentSession == null) return null;
 
     final rekeyResult = await rekeyService.rekeyIfNeeded();
     final localBus = await (db.select(db.businesses)..where((t) => t.id.equals(rekeyResult.newBusinessId))).getSingle();
@@ -111,8 +108,8 @@ class AuthSyncService {
           return ExistingBusinessChoice(serverBusiness: serverBus, canAdopt: canAdopt);
         }
       }
-    } catch (_) {
-      // Ignore query failure (e.g. table empty or RPC handles creation)
+    } on PostgrestException catch (e) {
+      throw StateError('Could not check your business on the server: ${e.message}');
     }
 
     // Call RPC create_business
@@ -124,8 +121,12 @@ class AuthSyncService {
         'p_gstin': localBus.gstin,
         'p_address': localBus.address,
       });
-    } catch (_) {
-      // RPC call warning/handled on server
+    } on PostgrestException catch (e) {
+      // 23505 = this business already exists on the server (signing in again
+      // on the same phone). Anything else must be shown, not hidden.
+      if (e.code != '23505') {
+        throw StateError('Could not create your business on the server: ${e.message}');
+      }
     }
 
     await registerDeviceAndAssignPrefix(localBus.id, rekeyResult.newDeviceId);
@@ -138,18 +139,22 @@ class AuthSyncService {
     final serverBusId = serverBusiness['id'] as String;
 
     await db.transaction(() async {
-      await db.customStatement('PRAGMA foreign_keys = OFF;');
+      // PRAGMA foreign_keys cannot be changed inside a transaction: defer the
+      // checks to COMMIT. The immutability triggers must be dropped to clear
+      // local data and are recreated before the commit.
+      await db.customStatement('PRAGMA defer_foreign_keys = ON;');
+      await db.dropTriggers();
 
-      // Clear local seed data
-      await db.delete(db.products).go();
-      await db.delete(db.parties).go();
-      await db.delete(db.draftCarts).go();
-      await db.delete(db.outboxCommands).go();
-      await db.delete(db.documents).go();
+      // Clear local seed data (children first)
       await db.delete(db.documentLines).go();
       await db.delete(db.payments).go();
       await db.delete(db.stockMovements).go();
+      await db.delete(db.documents).go();
       await db.delete(db.documentSeries).go();
+      await db.delete(db.draftCarts).go();
+      await db.delete(db.outboxCommands).go();
+      await db.delete(db.products).go();
+      await db.delete(db.parties).go();
 
       // Replace business record
       await db.delete(db.businesses).go();
@@ -159,7 +164,7 @@ class AuthSyncService {
               businessId: serverBusId,
               name: serverBusiness['name'] as String? ?? 'My Business',
               gstin: Value(serverBusiness['gstin'] as String?),
-              stateCode: serverBusiness['state_code'] as String? ?? '27',
+              stateCode: serverBusiness['state_code'] as String? ?? '24',
               address: serverBusiness['address'] as String? ?? '',
               upiId: Value(serverBusiness['upi_id'] as String?),
               invoiceTerms: Value(serverBusiness['invoice_terms'] as String?),
@@ -167,7 +172,10 @@ class AuthSyncService {
             ),
           );
 
-      await db.customStatement('PRAGMA foreign_keys = ON;');
+      // Keep this phone's device row, but attach it to the server business.
+      await db.update(db.devices).write(DevicesCompanion(businessId: Value(serverBusId)));
+
+      await db.createTriggers();
     });
 
     final currentDev = await (db.select(db.devices)..limit(1)).getSingleOrNull();
@@ -181,11 +189,18 @@ class AuthSyncService {
   Future<void> registerDeviceAndAssignPrefix(String businessId, String deviceId) async {
     final client = supabaseClient;
     Set<String> takenPrefixes = {};
+    String? ownRegisteredPrefix;
 
     if (client != null) {
       try {
-        final rows = await client.from('devices').select('series_prefix').eq('business_id', businessId);
-        takenPrefixes = (rows as List).map((r) => r['series_prefix'] as String).toSet();
+        final rows = await client.from('devices').select('id, series_prefix').eq('business_id', businessId);
+        for (final r in rows as List) {
+          if (r['id'] == deviceId) {
+            ownRegisteredPrefix = r['series_prefix'] as String?;
+          } else {
+            takenPrefixes.add(r['series_prefix'] as String);
+          }
+        }
       } catch (_) {}
     }
 
@@ -200,6 +215,13 @@ class AuthSyncService {
 
     final localDev = await (db.select(db.devices)..where((t) => t.id.equals(deviceId))).getSingleOrNull();
     final now = DateTime.now();
+
+    // Never renumber a device that already has a prefix: invoices were issued with it.
+    if (ownRegisteredPrefix != null) {
+      nextPrefix = ownRegisteredPrefix;
+    } else if (localDev != null && !takenPrefixes.contains(localDev.seriesPrefix)) {
+      nextPrefix = localDev.seriesPrefix;
+    }
 
     if (localDev != null) {
       await (db.update(db.devices)..where((t) => t.id.equals(deviceId))).write(
