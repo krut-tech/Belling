@@ -1,0 +1,211 @@
+{
+  "@@locale": "en",
+  "appTitle": "Universal Billing",
+  "tabSell": "Sell",
+  "tabItems": "Items",
+  "tabParties": "Parties",
+  "tabReports": "Reports",
+  "tabMore": "More",
+  "language": "Language",
+  "selectLanguage": "Select Language",
+  "english": "English",
+  "hindi": "Hindi",
+  "gujarati": "Gujarati",
+  "items": "Items",
+  "addItem": "Add Item",
+  "editItem": "Edit Item",
+  "searchItems": "Search items by name or barcode...",
+  "noItemsFound": "No items found",
+  "noItemsSub": "Tap '+' to add your first item.",
+  "itemName": "Item Name",
+  "barcode": "Barcode",
+  "scanBarcode": "Scan",
+  "typeOrScanBarcode": "Type or scan barcode...",
+  "hsn": "HSN Code",
+  "gstRate": "GST Rate",
+  "sellingPrice": "Selling Price (₹)",
+  "costPrice": "Cost Price (₹)",
+  "trackStock": "Track Inventory / Stock",
+  "openingStock": "Opening Stock (Units)",
+  "reorderLevel": "Reorder Level",
+  "lowStock": "Low",
+  "stock": "Stock",
+  "save": "Save",
+  "cancel": "Cancel",
+  "archive": "Archive",
+  "confirmArchive": "Are you sure you want to archive this item?",
+  "nameRequired": "Item name is required",
+  "priceRequired": "Valid price is required",
+  "duplicateBarcode": "Barcode already exists for another product",
+  "cameraNotAvailable": "Camera scanner not available on this device",
+  "scanTitle": "Scan Barcode",
+
+  "newBill": "New Bill",
+  "todayBills": "Today's Bills",
+  "noBillsToday": "No bills issued today",
+  "searchOrScan": "Search item or scan barcode...",
+  "itemNotFound": "Item not found",
+  "itemNotFoundAddPrompt": "Item not found. Add it?",
+  "add": "Add",
+  "walkIn": "Walk-in",
+  "selectParty": "Select Party",
+  "addParty": "Add Party",
+  "phone": "Phone Number",
+  "gstin": "GSTIN",
+  "state": "State",
+  "interState": "Inter-State (IGST)",
+  "intraState": "Intra-State (CGST + SGST)",
+  "qty": "Qty",
+  "rate": "Rate",
+  "discount": "Discount (₹)",
+  "lineTotal": "Total",
+  "taxableAmount": "Taxable Amount",
+  "cgst": "CGST",
+  "sgst": "SGST",
+  "igst": "IGST",
+  "roundOff": "Round Off",
+  "grandTotal": "Grand Total",
+  "paymentMethod": "Payment Method",
+  "cash": "Cash",
+  "upi": "UPI",
+  "card": "Card",
+  "credit": "Credit (Pay Later)",
+  "paidAmount": "Paid Amount (₹)",
+  "unpaidBalance": "Unpaid Balance (₹)",
+  "issueInvoice": "Issue Invoice",
+  "partyRequiredForCredit": "Party is required for credit or unpaid balance",
+  "cartEmpty": "Cart is empty",
+  "invoiceIssued": "Invoice Issued",
+  "invoiceNumber": "Invoice No.",
+  "share": "Share",
+  "sharePlaceholder": "Share feature coming soon",
+  "cancelInvoice": "Cancel Invoice",
+  "cancellationReason": "Cancellation Reason",
+  "reasonRequired": "Reason is required",
+  "confirmCancelInvoice": "Are you sure you want to cancel this invoice?",
+  "invoiceCancelled": "Invoice cancelled and credit note issued",
+  "statusCancelled": "Cancelled",
+  "statusIssued": "Issued",
+
+  "editParty": "Edit Party",
+  "partyDetails": "Party Details",
+  "totalReceivable": "Total Receivable",
+  "youGet": "You get {amount}",
+  "@youGet": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "youGive": "You give {amount}",
+  "@youGive": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "settled": "Settled",
+  "receivePayment": "Receive Payment",
+  "sendReminder": "Send Reminder",
+  "creditLimit": "Credit Limit (₹)",
+  "creditLimitExceeded": "Credit Limit Exceeded",
+  "creditLimitWarningMsg": "Credit limit for {name} is {limit}. New balance will be {newBalance}. Do you want to proceed?",
+  "@creditLimitWarningMsg": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "limit": {
+        "type": "String"
+      },
+      "newBalance": {
+        "type": "String"
+      }
+    }
+  },
+  "proceedAnyway": "Proceed Anyway",
+  "paymentReceived": "Payment Received",
+  "amount": "Amount (₹)",
+  "date": "Date",
+  "note": "Note",
+  "optionalNote": "Note (optional)",
+  "allocateToDocument": "Allocate to Invoice (optional)",
+  "none": "None",
+  "ledger": "Ledger",
+  "noTransactions": "No transactions found",
+  "runningBalance": "Balance: {amount}",
+  "@runningBalance": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "payment": "Payment",
+  "creditNote": "Credit Note",
+  "invoice": "Invoice",
+  "searchParties": "Search parties by name or phone...",
+  "noPartiesFound": "No parties found",
+  "noPartiesSub": "Tap '+' to add your first party.",
+  "balance": "Balance",
+
+  "dateRangeToday": "Today",
+  "dateRangeYesterday": "Yesterday",
+  "dateRangeThisWeek": "This Week",
+  "dateRangeThisMonth": "This Month",
+  "dateRangeLastMonth": "Last Month",
+  "dateRangeThisFinancialYear": "This Financial Year",
+  "dateRangeCustom": "Custom",
+  "salesTotal": "Sales Total",
+  "numberOfBills": "Number of Bills",
+  "creditGiven": "Credit Given",
+  "paymentsReceived": "Payments Received",
+  "cashPayments": "Cash",
+  "upiPayments": "UPI",
+  "cardPayments": "Card",
+  "top10ItemsByAmount": "Top 10 Items by Amount",
+  "top10ItemsByQty": "Top 10 Items by Quantity",
+  "lowStockList": "Low Stock List",
+  "receivablesTop10": "Top 10 Receivables",
+  "gstSummary": "GST Summary",
+  "b2bSection": "B2B Sales (Registered Parties)",
+  "b2cSection": "B2C Sales (Retail / Unregistered)",
+  "gstRateHeader": "GST Rate",
+  "taxableHeader": "Taxable Value",
+  "totalTaxHeader": "Total Tax",
+  "totalsMismatchBanner": "Warning: Document totals do not match line item totals!",
+  "totalsMatchCheck": "Totals Check Passed",
+  "exportCsv": "Export CSV",
+  "exportSalesRegister": "Sales Register CSV",
+  "exportGstSummary": "GST Summary CSV",
+  "exportPartyBalances": "Party Balances CSV",
+  "backupAndRestore": "Backup & Restore",
+  "backUpNow": "Back Up Now",
+  "restore": "Restore",
+  "backupCreated": "Backup created successfully",
+  "restoreConfirmTitle": "Confirm Restore",
+  "restoreConfirmMsg": "This backup contains {invoices} invoices and {parties} parties. Are you sure you want to replace current data?",
+  "@restoreConfirmMsg": {
+    "placeholders": {
+      "invoices": {
+        "type": "int"
+      },
+      "parties": {
+        "type": "int"
+      }
+    }
+  },
+  "restoreSuccess": "Database restored successfully",
+  "restoreCorruptError": "Corrupt or invalid backup file",
+  "selectDateRange": "Select Date Range",
+  "viewGstSummary": "View GST Summary",
+  "noDataAvailable": "No data available for selected range",
+  "errorSavingSettings": "Failed to save settings",
+  "stateRequired": "State is required",
+  "gstinLengthError": "GSTIN must be 15 characters",
+  "gstinStateCodeMismatch": "GSTIN state code must match selected state",
+  "genericError": "An error occurred. Please try again.",
+  "stateLabel": "State *"
+}

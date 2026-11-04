@@ -1,0 +1,87 @@
+import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+import '../data/database.dart';
+import '../data/providers.dart';
+import 'auth_sync_service.dart';
+import 'push_worker.dart';
+import 'supabase_sync_remote.dart';
+import 'sync_remote.dart';
+
+final syncRemoteProvider = Provider<SyncRemote>((ref) {
+  try {
+    return SupabaseSyncRemote(Supabase.instance.client);
+  } catch (_) {
+    throw StateError('Supabase is not initialized');
+  }
+});
+
+final authSyncServiceProvider = Provider<AuthSyncService>((ref) {
+  final db = ref.watch(databaseProvider);
+  return AuthSyncService(db: db);
+});
+
+final pushWorkerProvider = Provider<PushWorker>((ref) {
+  final db = ref.watch(databaseProvider);
+  final remote = ref.watch(syncRemoteProvider);
+  final worker = PushWorker(db: db, remote: remote);
+  worker.start();
+  ref.onDispose(() => worker.stop());
+  return worker;
+});
+
+final outboxCommandsStreamProvider = StreamProvider<List<OutboxCommand>>((ref) {
+  final db = ref.watch(databaseProvider);
+  return db.select(db.outboxCommands).watch();
+});
+
+enum SyncStatusType {
+  signInToSync,
+  offline,
+  synced,
+  pending,
+  error,
+}
+
+class SyncStatusState {
+  final SyncStatusType type;
+  final int pendingCount;
+  final List<OutboxCommand> rejectedCommands;
+
+  const SyncStatusState({
+    required this.type,
+    this.pendingCount = 0,
+    this.rejectedCommands = const [],
+  });
+}
+
+final connectivityStreamProvider = StreamProvider<List<ConnectivityResult>>((ref) {
+  return Connectivity().onConnectivityChanged;
+});
+
+final syncStatusProvider = Provider<SyncStatusState>((ref) {
+  final authService = ref.watch(authSyncServiceProvider);
+  if (!authService.isSignedIn) {
+    return const SyncStatusState(type: SyncStatusType.signInToSync);
+  }
+
+  final connectivity = ref.watch(connectivityStreamProvider).valueOrNull;
+  final isOffline = connectivity != null && connectivity.every((r) => r == ConnectivityResult.none);
+  if (isOffline) {
+    return const SyncStatusState(type: SyncStatusType.offline);
+  }
+
+  final outbox = ref.watch(outboxCommandsStreamProvider).valueOrNull ?? [];
+  final rejected = outbox.where((c) => c.status == 'rejected').toList();
+  if (rejected.isNotEmpty) {
+    return SyncStatusState(type: SyncStatusType.error, rejectedCommands: rejected);
+  }
+
+  final pendingCount = outbox.where((c) => c.status == 'pending').length;
+  if (pendingCount > 0) {
+    return SyncStatusState(type: SyncStatusType.pending, pendingCount: pendingCount);
+  }
+
+  return const SyncStatusState(type: SyncStatusType.synced);
+});

@@ -1,0 +1,211 @@
+{
+  "@@locale": "hi",
+  "appTitle": "यूनिवर्सल बिलिंग",
+  "tabSell": "बिक्री",
+  "tabItems": "सामान",
+  "tabParties": "पार्टी",
+  "tabReports": "रिपोर्ट",
+  "tabMore": "अधिक",
+  "language": "भाषा",
+  "selectLanguage": "भाषा चुनें",
+  "english": "अंग्रेज़ी",
+  "hindi": "हिंदी",
+  "gujarati": "गुजराती",
+  "items": "सामान",
+  "addItem": "सामान जोड़ें",
+  "editItem": "सामान संपादित करें",
+  "searchItems": "नाम या बारकोड से खोजें...",
+  "noItemsFound": "कोई सामान नहीं मिला",
+  "noItemsSub": "पहला सामान जोड़ने के लिए '+' दबाएं।",
+  "itemName": "सामान का नाम",
+  "barcode": "बारकोड",
+  "scanBarcode": "स्कैन",
+  "typeOrScanBarcode": "बारकोड टाइप या स्कैन करें...",
+  "hsn": "एचएसएन कोड",
+  "gstRate": "जीएसटी दर",
+  "sellingPrice": "बिक्री मूल्य (₹)",
+  "costPrice": "लागत मूल्य (₹)",
+  "trackStock": "स्टॉक ट्रैक करें",
+  "openingStock": "प्रारंभिक स्टॉक",
+  "reorderLevel": "रीऑर्डर स्तर",
+  "lowStock": "कम",
+  "stock": "स्टॉक",
+  "save": "सहेजें",
+  "cancel": "रद्द करें",
+  "archive": "आर्काइव",
+  "confirmArchive": "क्या आप इस सामान को आर्काइव करना चाहते हैं?",
+  "nameRequired": "सामान का नाम आवश्यक है",
+  "priceRequired": "मान्य कीमत आवश्यक है",
+  "duplicateBarcode": "यह बारकोड किसी अन्य सामान के लिए मौजूद है",
+  "cameraNotAvailable": "इस डिवाइस पर कैमरा उपलब्ध नहीं है",
+  "scanTitle": "बारकोड स्कैन करें",
+
+  "newBill": "नया बिल",
+  "todayBills": "आज के बिल",
+  "noBillsToday": "आज कोई बिल जारी नहीं हुआ",
+  "searchOrScan": "सामान खोजें या बारकोड स्कैन करें...",
+  "itemNotFound": "सामान नहीं मिला",
+  "itemNotFoundAddPrompt": "सामान नहीं मिला। क्या आप इसे जोड़ना चाहते हैं?",
+  "add": "जोड़ें",
+  "walkIn": "वॉका-इन",
+  "selectParty": "पार्टी चुनें",
+  "addParty": "पार्टी जोड़ें",
+  "phone": "फोन नंबर",
+  "gstin": "जीएसटीइन",
+  "state": "राज्य",
+  "interState": "अंतर-राज्यीय (IGST)",
+  "intraState": "राज्य के भीतर (CGST + SGST)",
+  "qty": "मात्रा",
+  "rate": "दर",
+  "discount": "छूट (₹)",
+  "lineTotal": "कुल",
+  "taxableAmount": "करयोग्य राशि",
+  "cgst": "CGST",
+  "sgst": "SGST",
+  "igst": "IGST",
+  "roundOff": "राउंड ऑफ",
+  "grandTotal": "कुल योग",
+  "paymentMethod": "भुगतान का तरीका",
+  "cash": "नकद",
+  "upi": "यूपीआई",
+  "card": "कार्ड",
+  "credit": "उधार (बाद में भुगतान)",
+  "paidAmount": "भुगतान की गई राशि (₹)",
+  "unpaidBalance": "बकाया राशि (₹)",
+  "issueInvoice": "बिल जारी करें",
+  "partyRequiredForCredit": "उधार या बकाया राशि के लिए पार्टी आवश्यक है",
+  "cartEmpty": "कार्ट खाली है",
+  "invoiceIssued": "बिल जारी किया गया",
+  "invoiceNumber": "बिल संख्या",
+  "share": "शेयर",
+  "sharePlaceholder": "शेयर की सुविधा जल्द आ रही है",
+  "cancelInvoice": "बिल रद्द करें",
+  "cancellationReason": "रद्द करने का कारण",
+  "reasonRequired": "कारण आवश्यक है",
+  "confirmCancelInvoice": "क्या आप वाकई इस बिल को रद्द करना चाहते हैं?",
+  "invoiceCancelled": "बिल रद्द कर दिया गया और क्रेडिट नोट जारी किया गया",
+  "statusCancelled": "रद्द",
+  "statusIssued": "जारी",
+
+  "editParty": "पार्टी संपादित करें",
+  "partyDetails": "पार्टी विवरण",
+  "totalReceivable": "कुल प्राप्त्य",
+  "youGet": "आपको मिलेगा {amount}",
+  "@youGet": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "youGive": "आपको देना है {amount}",
+  "@youGive": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "settled": "बराबर (Settled)",
+  "receivePayment": "भुगतान प्राप्त करें",
+  "sendReminder": "रिमाइंडर भेजें",
+  "creditLimit": "क्रेडिट सीमा (₹)",
+  "creditLimitExceeded": "क्रेडिट सीमा समाप्त",
+  "creditLimitWarningMsg": "{name} की क्रेडिट सीमा {limit} है। नया बकाया {newBalance} होगा। क्या आप आगे बढ़ना चाहते हैं?",
+  "@creditLimitWarningMsg": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "limit": {
+        "type": "String"
+      },
+      "newBalance": {
+        "type": "String"
+      }
+    }
+  },
+  "proceedAnyway": "फिर भी जारी रखें",
+  "paymentReceived": "भुगतान प्राप्त हुआ",
+  "amount": "राशि (₹)",
+  "date": "दिनांक",
+  "note": "टिप्पणी",
+  "optionalNote": "टिप्पणी (वैकल्पिक)",
+  "allocateToDocument": "बिल में जोड़ें (वैकल्पिक)",
+  "none": "कोई नहीं",
+  "ledger": "खाता बही (Ledger)",
+  "noTransactions": "कोई लेनदेन नहीं मिला",
+  "runningBalance": "बकाया: {amount}",
+  "@runningBalance": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "payment": "भुगतान",
+  "creditNote": "क्रेडिट नोट",
+  "invoice": "बिल",
+  "searchParties": "नाम या फोन से पार्टी खोजें...",
+  "noPartiesFound": "कोई पार्टी नहीं मिली",
+  "noPartiesSub": "अपनी पहली पार्टी जोड़ने के लिए '+' दबाएं।",
+  "balance": "बकाया",
+
+  "dateRangeToday": "आज",
+  "dateRangeYesterday": "कल",
+  "dateRangeThisWeek": "इस सप्ताह",
+  "dateRangeThisMonth": "इस महीने",
+  "dateRangeLastMonth": "पिछले महीने",
+  "dateRangeThisFinancialYear": "इस वित्तीय वर्ष",
+  "dateRangeCustom": "कस्टम",
+  "salesTotal": "कुल बिक्री",
+  "numberOfBills": "बिल की संख्या",
+  "creditGiven": "दिया गया उधार",
+  "paymentsReceived": "प्राप्त भुगतान",
+  "cashPayments": "नकद",
+  "upiPayments": "यूपीआई",
+  "cardPayments": "कार्ड",
+  "top10ItemsByAmount": "राशि के अनुसार शीर्ष 10 सामान",
+  "top10ItemsByQty": "मात्रा के अनुसार शीर्ष 10 सामान",
+  "lowStockList": "कम स्टॉक सूची",
+  "receivablesTop10": "शीर्ष 10 प्राप्त्य",
+  "gstSummary": "जीएसटी विवरण",
+  "b2bSection": "B2B बिक्री (पंजीकृत)",
+  "b2cSection": "B2C बिक्री (अपंजीकृत/खुदरा)",
+  "gstRateHeader": "जीएसटी दर",
+  "taxableHeader": "करयोग्य मूल्य",
+  "totalTaxHeader": "कुल कर",
+  "totalsMismatchBanner": "चेतावनी: दस्तावेज़ के योग और लाइनों के योग मेल नहीं खाते!",
+  "totalsMatchCheck": "योग जांच सफल",
+  "exportCsv": "सीएसवी निर्यात करें",
+  "exportSalesRegister": "बिक्री रजिस्टर CSV",
+  "exportGstSummary": "जीएसटी विवरण CSV",
+  "exportPartyBalances": "पार्टी बकाया CSV",
+  "backupAndRestore": "बैकअप और रीस्टोर",
+  "backUpNow": "अभी बैकअप लें",
+  "restore": "रीस्टोर करें",
+  "backupCreated": "बैकअप फ़ाइल सफलतापूर्वक बनाई गई",
+  "restoreConfirmTitle": "रीस्टोर की पुष्टि करें",
+  "restoreConfirmMsg": "इस बैकअप में {invoices} बिल और {parties} पार्टियां हैं। क्या आप वर्तमान डेटा को बदलना चाहते हैं?",
+  "@restoreConfirmMsg": {
+    "placeholders": {
+      "invoices": {
+        "type": "int"
+      },
+      "parties": {
+        "type": "int"
+      }
+    }
+  },
+  "restoreSuccess": "डेटाबेस सफलतापूर्वक रीस्टोर हो गया",
+  "restoreCorruptError": "क्षतिग्रस्त या अमान्य बैकअप फ़ाइल",
+  "selectDateRange": "तिथि सीमा चुनें",
+  "viewGstSummary": "जीएसटी विवरण देखें",
+  "noDataAvailable": "चयनित सीमा के लिए कोई डेटा उपलब्ध नहीं है",
+  "errorSavingSettings": "सेटिंग्स सहेजने में विफल",
+  "stateRequired": "राज्य आवश्यक है",
+  "gstinLengthError": "GSTIN 15 वर्णों का होना चाहिए",
+  "gstinStateCodeMismatch": "GSTIN राज्य कोड चयनित राज्य से मेल खाना चाहिए",
+  "genericError": "एक त्रुटि हुई। कृपया पुनः प्रयास करें।",
+  "stateLabel": "राज्य *"
+}

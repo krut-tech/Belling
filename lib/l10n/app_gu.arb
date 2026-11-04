@@ -1,0 +1,211 @@
+{
+  "@@locale": "gu",
+  "appTitle": "યુનિવર્સલ બિલિંગ",
+  "tabSell": "વેચાણ",
+  "tabItems": "વસ્તુઓ",
+  "tabParties": "પાર્ટીઓ",
+  "tabReports": "રિપોર્ટ",
+  "tabMore": "વધુ",
+  "language": "ભાષા",
+  "selectLanguage": "ભાષા પસંદ કરો",
+  "english": "અંગ્રેજી",
+  "hindi": "હિન્દી",
+  "gujarati": "ગુજરાતી",
+  "items": "વસ્તુઓ",
+  "addItem": "વસ્તુ ઉમેરો",
+  "editItem": "વસ્તુમાં ફેરફાર કરો",
+  "searchItems": "નામ અથવા બારકોડ દ્વારા શોધો...",
+  "noItemsFound": "કોઈ વસ્તુ મળી નથી",
+  "noItemsSub": "તમારી પ્રથમ વસ્તુ ઉમેરવા માટે '+' દબાવો.",
+  "itemName": "વસ્તુનું નામ",
+  "barcode": "બારકોડ",
+  "scanBarcode": "સ્કેન",
+  "typeOrScanBarcode": "બારકોડ ટાઈપ અથવા સ્કેન કરો...",
+  "hsn": "એચએસએન કોડ",
+  "gstRate": "જીએસટી દર",
+  "sellingPrice": "વેચાણ કિંમત (₹)",
+  "costPrice": "પડતર કિંમત (₹)",
+  "trackStock": "સ્ટોક ટ્રેક કરો",
+  "openingStock": "શરૂઆતનો સ્ટોક",
+  "reorderLevel": "રીઓર્ડર લેવલ",
+  "lowStock": "ઓછું",
+  "stock": "સ્ટોક",
+  "save": "સાચવો",
+  "cancel": "રદ કરો",
+  "archive": "આર્કાઇવ",
+  "confirmArchive": "શું તમે આ વસ્તુને આર્કાઇવ કરવા માંગો છો?",
+  "nameRequired": "વસ્તુનું નામ જરૂરી છે",
+  "priceRequired": "લાગુ પડતી કિંમત જરૂરી છે",
+  "duplicateBarcode": "આ બારકોડ અન્ય વસ્તુ માટે પહેલાથી અસ્તિત્વમાં છે",
+  "cameraNotAvailable": "આ ઉપકરણ પર કેમેરા સ્કેનર ઉપલબ્ધ નથી",
+  "scanTitle": "બારકોડ સ્કેન કરો",
+
+  "newBill": "નવું બિલ",
+  "todayBills": "આજના બિલ",
+  "noBillsToday": "આજે કોઈ બિલ આપેલ નથી",
+  "searchOrScan": "વસ્તુ શોધો અથવા બારકોડ સ્કેન કરો...",
+  "itemNotFound": "વસ્તુ મળી નથી",
+  "itemNotFoundAddPrompt": "વસ્તુ મળી નથી. શું તમે તેને ઉમેરવા માંગો છો?",
+  "add": "ઉમેરો",
+  "walkIn": "વોક-ઇન",
+  "selectParty": "પાર્ટી પસંદ કરો",
+  "addParty": "પાર્ટી ઉમેરો",
+  "phone": "ફોન નંબર",
+  "gstin": "જીએસટીઆઈએન",
+  "state": "રાજ્ય",
+  "interState": "આંતર-રાજ્ય (IGST)",
+  "intraState": "રાજ્યની અંદર (CGST + SGST)",
+  "qty": "જથ્થો",
+  "rate": "દર",
+  "discount": "ડિસ્કાઉન્ટ (₹)",
+  "lineTotal": "કુલ",
+  "taxableAmount": "કરપાત્ર રકમ",
+  "cgst": "CGST",
+  "sgst": "SGST",
+  "igst": "IGST",
+  "roundOff": "રાઉન્ડ ઓફ",
+  "grandTotal": "કુલ રકમ",
+  "paymentMethod": "ચૂકવણીની પદ્ધતિ",
+  "cash": "રોકડ",
+  "upi": "યુપીઆઈ",
+  "card": "કાર્ડ",
+  "credit": "ઉધાર (પછીથી ચૂકવો)",
+  "paidAmount": "ચૂકવેલ રકમ (₹)",
+  "unpaidBalance": "બાકી રકમ (₹)",
+  "issueInvoice": "બિલ આપો",
+  "partyRequiredForCredit": "ઉધાર અથવા બાકી રકમ માટે પાર્ટી જરૂરી છે",
+  "cartEmpty": "કાર્ટ ખાલી છે",
+  "invoiceIssued": "બિલ આપવામાં આવ્યું",
+  "invoiceNumber": "બિલ નંબર",
+  "share": "શેર",
+  "sharePlaceholder": "શેર સુવિધા ટૂંક સમયમાં આવી રહી છે",
+  "cancelInvoice": "બિલ રદ કરો",
+  "cancellationReason": "રદ કરવાનું કારણ",
+  "reasonRequired": "કારણ જરૂરી છે",
+  "confirmCancelInvoice": "શું તમે ખરેખર આ બિલ રદ કરવા માંગો છો?",
+  "invoiceCancelled": "બિલ રદ કરવામાં આવ્યું અને ક્રેડિટ નોટ આપવામાં આવી",
+  "statusCancelled": "રદ કરેલ",
+  "statusIssued": "આપેલ",
+
+  "editParty": "પાર્ટીમાં ફેરફાર કરો",
+  "partyDetails": "પાર્ટી વિગત",
+  "totalReceivable": "કુલ મળવાપાત્ર",
+  "youGet": "તમારે લેવાના {amount}",
+  "@youGet": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "youGive": "તમારે આપવાના {amount}",
+  "@youGive": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "settled": "સરભર (Settled)",
+  "receivePayment": "ચૂકવણી મેળવો",
+  "sendReminder": "રિમાઇન્ડર મોકલો",
+  "creditLimit": "ક્રેડિટ મર્યાદા (₹)",
+  "creditLimitExceeded": "ક્રેડિટ મર્યાદા વટાવી ગઈ",
+  "creditLimitWarningMsg": "{name} ની ક્રેડિટ મર્યાદા {limit} છે. નવું બાકી {newBalance} થશે. શું તમે આગળ વધવા માંગો છો?",
+  "@creditLimitWarningMsg": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "limit": {
+        "type": "String"
+      },
+      "newBalance": {
+        "type": "String"
+      }
+    }
+  },
+  "proceedAnyway": "તો પણ આગળ વધો",
+  "paymentReceived": "ચૂકવણી મળી",
+  "amount": "રકમ (₹)",
+  "date": "તારીખ",
+  "note": "નોંધ",
+  "optionalNote": "નોંધ (વૈકલ્પિક)",
+  "allocateToDocument": "બિલમાં ફાળવો (વૈકલ્પિક)",
+  "none": "કોઈ નહીં",
+  "ledger": "લેજર",
+  "noTransactions": "કોઈ વ્યવહાર મળ્યા નથી",
+  "runningBalance": "બાકી: {amount}",
+  "@runningBalance": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "payment": "ચૂકવણી",
+  "creditNote": "ક્રેડિટ નોટ",
+  "invoice": "બિલ",
+  "searchParties": "નામ અથવા ફોન દ્વારા પાર્ટી શોધો...",
+  "noPartiesFound": "કોઈ પાર્ટી મળી નથી",
+  "noPartiesSub": "તમારી પ્રથમ પાર્ટી ઉમેરવા માટે '+' દબાવો.",
+  "balance": "બાકી",
+
+  "dateRangeToday": "આજે",
+  "dateRangeYesterday": "ગઇકાલે",
+  "dateRangeThisWeek": "આ અઠવાડિયે",
+  "dateRangeThisMonth": "આ મહિને",
+  "dateRangeLastMonth": "ગયામહિને",
+  "dateRangeThisFinancialYear": "આ નાણાકીય વર્ષ",
+  "dateRangeCustom": "કસ્ટમ",
+  "salesTotal": "કુલ વેચાણ",
+  "numberOfBills": "બિલની સંખ્યા",
+  "creditGiven": "આપેલ ઉધાર",
+  "paymentsReceived": "મળેલ ચૂકવણી",
+  "cashPayments": "રોકડ",
+  "upiPayments": "યુપીઆઈ",
+  "cardPayments": "કાર્ડ",
+  "top10ItemsByAmount": "રકમ મુજબ ટોચની 10 વસ્તુઓ",
+  "top10ItemsByQty": "જથ્થા મુજબ ટોચની 10 વસ્તુઓ",
+  "lowStockList": "ઓછા સ્ટોકની યાદી",
+  "receivablesTop10": "ટોચના 10 લેણાં",
+  "gstSummary": "જીએસટી સારાંશ",
+  "b2bSection": "B2B વેચાણ (રજિસ્ટર્ડ)",
+  "b2cSection": "B2C વેચાણ (અનરજિસ્ટર્ડ)",
+  "gstRateHeader": "જીએસટી દર",
+  "taxableHeader": "કરપાત્ર કિંમત",
+  "totalTaxHeader": "કુલ કર",
+  "totalsMismatchBanner": "ચેતવણી: દસ્તાવેજના કુલ અને લાઇનના કુલ મળતા નથી!",
+  "totalsMatchCheck": "કુલ ચકાસણી સફળ",
+  "exportCsv": "સીએસવી નિકાસ કરો",
+  "exportSalesRegister": "વેચાણ રજિસ્ટર CSV",
+  "exportGstSummary": "જીએસટી સારાંશ CSV",
+  "exportPartyBalances": "પાર્ટી બાકી CSV",
+  "backupAndRestore": "બેકઅપ અને રીસ્ટોર",
+  "backUpNow": "હવે બેકઅપ લો",
+  "restore": "રીસ્ટોર કરો",
+  "backupCreated": "બેકઅપ ફાઇલ સફળતાપૂર્વક બનાવાઈ",
+  "restoreConfirmTitle": "રીસ્ટોરની ખાતરી કરો",
+  "restoreConfirmMsg": "આ બેકઅપમાં {invoices} બિલ અને {parties} પાર્ટીઓ છે. શું તમે પ્રવર્તમાન ડેટા બદલવા માંગો છો?",
+  "@restoreConfirmMsg": {
+    "placeholders": {
+      "invoices": {
+        "type": "int"
+      },
+      "parties": {
+        "type": "int"
+      }
+    }
+  },
+  "restoreSuccess": "ડેટાબેઝ સફળતાપૂર્વક રીસ્ટોર થયો",
+  "restoreCorruptError": "ક્ષતિગ્રસ્ત અથવા અમાન્ય બેકઅપ ફાઇલ",
+  "selectDateRange": "તારીખ મર્યાદા પસંદ કરો",
+  "viewGstSummary": "જીએસટી સારાંશ જુઓ",
+  "noDataAvailable": "પસંદ કરેલ તારીખ માટે કોઈ ડેટા ઉપલબ્ધ નથી",
+  "errorSavingSettings": "સેટિંગ્સ સાચવવામાં નિષ્ફળ",
+  "stateRequired": "રાજ્ય જરૂરી છે",
+  "gstinLengthError": "GSTIN 15 અક્ષરોનું હોવું જોઈએ",
+  "gstinStateCodeMismatch": "GSTIN રાજ્ય કોડ પસંદ કરેલ રાજ્ય સાથે મેળ ખાતો હોવો જોઈએ",
+  "genericError": "એક ભૂલ આવી. કૃપા કરીને ફરીથી પ્રયાસ કરો.",
+  "stateLabel": "રાજ્ય *"
+}
