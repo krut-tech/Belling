@@ -10,6 +10,7 @@ import 'features/reports/reports_page.dart';
 import 'features/sell/done_page.dart';
 import 'features/sell/new_bill_page.dart';
 import 'features/sell/sell_page.dart';
+import 'core/widgets/motion.dart';
 import 'l10n/app_localizations.dart';
 
 import 'features/parties/party_detail_page.dart';
@@ -113,34 +114,40 @@ class ScaffoldWithNavBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     return Scaffold(
-      body: navigationShell,
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: navigationShell.currentIndex,
-        onTap: (index) {
+      body: TabFadeIn(index: navigationShell.currentIndex, child: navigationShell),
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: navigationShell.currentIndex,
+        animationDuration: const Duration(milliseconds: 400),
+        onDestinationSelected: (index) {
           navigationShell.goBranch(
             index,
             initialLocation: index == navigationShell.currentIndex,
           );
         },
-        items: [
-          BottomNavigationBarItem(
-            icon: const Icon(Icons.point_of_sale),
+        destinations: [
+          NavigationDestination(
+            icon: const Icon(Icons.point_of_sale_outlined),
+            selectedIcon: const Icon(Icons.point_of_sale),
             label: l10n.tabSell,
           ),
-          BottomNavigationBarItem(
-            icon: const Icon(Icons.inventory_2),
+          NavigationDestination(
+            icon: const Icon(Icons.inventory_2_outlined),
+            selectedIcon: const Icon(Icons.inventory_2),
             label: l10n.tabItems,
           ),
-          BottomNavigationBarItem(
-            icon: const Icon(Icons.people),
+          NavigationDestination(
+            icon: const Icon(Icons.people_outline),
+            selectedIcon: const Icon(Icons.people),
             label: l10n.tabParties,
           ),
-          BottomNavigationBarItem(
-            icon: const Icon(Icons.bar_chart),
+          NavigationDestination(
+            icon: const Icon(Icons.bar_chart_outlined),
+            selectedIcon: const Icon(Icons.bar_chart),
             label: l10n.tabReports,
           ),
-          BottomNavigationBarItem(
+          NavigationDestination(
             icon: const Icon(Icons.more_horiz),
+            selectedIcon: const Icon(Icons.more_horiz),
             label: l10n.tabMore,
           ),
         ],

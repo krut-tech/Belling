@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/widgets/motion.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -146,7 +147,7 @@ class _PartiesPageState extends ConsumerState<PartiesPage> {
                     final p = item.party;
                     final balancePaise = item.balancePaise;
 
-                    return ListTile(
+                    return FadeSlideIn(index: index, child: ListTile(
                       minVerticalPadding: 16, // Ensure >= 48px touch target
                       leading: CircleAvatar(
                         child: Text(
@@ -177,7 +178,7 @@ class _PartiesPageState extends ConsumerState<PartiesPage> {
                       onTap: () {
                         context.push('/parties/${p.id}');
                       },
-                    );
+                    ));
                   },
                 );
               },

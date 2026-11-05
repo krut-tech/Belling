@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/widgets/motion.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/money.dart';
@@ -90,7 +91,7 @@ class _ItemsPageState extends ConsumerState<ItemsPage> {
                       subtitleParts.add('HSN: ${p.hsn}');
                     }
 
-                    return ListTile(
+                    return FadeSlideIn(index: index, child: ListTile(
                       minVerticalPadding: 12, // Ensure touch height >= 48px
                       title: Row(
                         children: [
@@ -159,7 +160,7 @@ class _ItemsPageState extends ConsumerState<ItemsPage> {
                         ),
                       ),
                       onTap: () => ItemFormDialog.show(context, item: item),
-                    );
+                    ));
                   },
                 );
               },

@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 
 abstract class AppColors {
   // Light Palette
-  static const lightBackground = Color(0xFFFFFFFF);
-  static const lightSurface = Color(0xFFF4F6F9);
+  static const lightBackground = Color(0xFFF5F7FC);
+  static const lightSurface = Color(0xFFFFFFFF);
   static const lightText = Color(0xFF0F172A);
   static const lightMuted = Color(0xFF475569);
-  static const lightBorder = Color(0xFFD5DBE3);
-  static const lightPrimary = Color(0xFF0B5FA5);
+  static const lightBorder = Color(0xFFE2E8F2);
+  static const lightPrimary = Color(0xFF2F5BEA);
   static const lightSuccess = Color(0xFF1B7F4B);
   static const lightWarning = Color(0xFFB45309);
   static const lightDanger = Color(0xFFB42318);

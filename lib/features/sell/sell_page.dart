@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/widgets/motion.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
@@ -101,7 +102,7 @@ class SellPage extends ConsumerWidget {
                     final timeStr = DateFormat('hh:mm a').format(doc.issuedAt);
                     final isCancelled = doc.status == 'cancelled';
 
-                    return ListTile(
+                    return FadeSlideIn(index: index, child: ListTile(
                       minVerticalPadding: 12,
                       leading: CircleAvatar(
                         backgroundColor: isCancelled ? Colors.red.shade100 : Colors.blue.shade100,
@@ -152,7 +153,7 @@ class SellPage extends ConsumerWidget {
                       onTap: () {
                         context.go('/sell/done/${doc.id}');
                       },
-                    );
+                    ));
                   },
                 );
               },

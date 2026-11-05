@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/widgets/motion.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -157,10 +158,12 @@ class _DonePageState extends ConsumerState<DonePage> {
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Icon(
-                isCancelled ? Icons.cancel : Icons.check_circle,
-                size: 80,
-                color: isCancelled ? Colors.red : Colors.green,
+              PopIn(
+                child: Icon(
+                  isCancelled ? Icons.cancel : Icons.check_circle,
+                  size: 88,
+                  color: isCancelled ? Colors.red : Colors.green,
+                ),
               ),
               const SizedBox(height: 16),
               Text(
