@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/widgets/motion.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/money.dart';
@@ -44,7 +45,7 @@ class GstSummaryPage extends ConsumerWidget {
         data: (summary) {
           return ListView(
             padding: const EdgeInsets.all(16.0),
-            children: [
+            children: staggered([
               // Date Range Indicator
               Card(
                 child: Padding(
@@ -171,7 +172,7 @@ class GstSummaryPage extends ConsumerWidget {
                   ),
                 ),
               ),
-            ],
+            ]),
           );
         },
         loading: () => const Center(child: CircularProgressIndicator()),

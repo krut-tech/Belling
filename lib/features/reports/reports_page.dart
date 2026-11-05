@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/widgets/motion.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -136,7 +137,7 @@ class _ReportsPageState extends ConsumerState<ReportsPage> {
         },
         child: ListView(
           padding: const EdgeInsets.all(16.0),
-          children: [
+          children: staggered([
             // Date Range Preset Filter Chips
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
@@ -401,7 +402,7 @@ class _ReportsPageState extends ConsumerState<ReportsPage> {
                 ),
               ),
             ),
-          ],
+          ]),
         ),
       ),
     );

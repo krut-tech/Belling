@@ -157,7 +157,7 @@ class _DonePageState extends ConsumerState<DonePage> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
+            children: staggered([
               PopIn(
                 child: Icon(
                   isCancelled ? Icons.cancel : Icons.check_circle,
@@ -279,7 +279,7 @@ class _DonePageState extends ConsumerState<DonePage> {
                         )
                       : Text(l10n.cancelInvoice),
                 ),
-            ],
+            ]),
           ),
         ),
       ),

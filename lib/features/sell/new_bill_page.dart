@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/widgets/motion.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -330,7 +331,7 @@ class _NewBillPageState extends ConsumerState<NewBillPage> {
                         final line = billState.lines[index];
                         final lineTotal = divideRoundHalfUp(line.qtyMilli * line.ratePaise, 1000) - line.discountPaise;
 
-                        return Dismissible(
+                        return FadeSlideIn(key: ValueKey('fs_${line.product.product.id}_$index'), index: index, child: Dismissible(
                           key: ValueKey('${line.product.product.id}_$index'),
                           direction: DismissDirection.endToStart,
                           background: Container(
@@ -448,7 +449,7 @@ class _NewBillPageState extends ConsumerState<NewBillPage> {
                               ],
                             ),
                           ),
-                        );
+                        ));
                       },
                     ),
             ),
@@ -485,7 +486,7 @@ class _SearchResultsList extends ConsumerWidget {
           separatorBuilder: (ctx, idx) => const Divider(height: 1),
           itemBuilder: (ctx, index) {
             final p = products[index];
-            return ListTile(
+            return FadeSlideIn(index: index, child: ListTile(
               minVerticalPadding: 12, // 48px touch target
               title: Text(p.product.name),
               subtitle: Text(
@@ -496,7 +497,7 @@ class _SearchResultsList extends ConsumerWidget {
                 style: const TextStyle(fontWeight: FontWeight.bold),
               ),
               onTap: () => onProductSelected(p),
-            );
+            ));
           },
         );
       },
@@ -591,7 +592,7 @@ class _SelectPartySheetState extends ConsumerState<_SelectPartySheet> {
                     final item = parties[i];
                     final party = item.party;
                     final balancePaise = item.balancePaise;
-                    return ListTile(
+                    return FadeSlideIn(index: i, child: ListTile(
                       minVerticalPadding: 12,
                       title: Text(party.name),
                       subtitle: Text('${party.phone}${party.gstin != null && party.gstin!.isNotEmpty ? " | GSTIN: ${party.gstin}" : ""}'),
@@ -607,7 +608,7 @@ class _SelectPartySheetState extends ConsumerState<_SelectPartySheet> {
                                 )
                               : null),
                       onTap: () => widget.onPartySelected(party),
-                    );
+                    ));
                   },
                 );
               },

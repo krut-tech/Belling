@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/widgets/motion.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../sync/auth_sync_service.dart';
@@ -183,7 +184,7 @@ class _BackupAndSyncPageState extends ConsumerState<BackupAndSyncPage> {
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
+          children: staggered([
             Card(
               child: Padding(
                 padding: const EdgeInsets.all(16),
@@ -331,7 +332,7 @@ class _BackupAndSyncPageState extends ConsumerState<BackupAndSyncPage> {
                 ),
               ),
             ],
-          ],
+          ]),
         ),
       ),
     );

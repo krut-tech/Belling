@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/widgets/motion.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:share_plus/share_plus.dart';
@@ -217,7 +218,7 @@ class PartyDetailPage extends ConsumerWidget {
                       separatorBuilder: (context, index) => const Divider(height: 1),
                       itemBuilder: (context, index) {
                         final item = items[index];
-                        return _buildLedgerTile(context, l10n, item);
+                        return FadeSlideIn(index: index, child: _buildLedgerTile(context, l10n, item));
                       },
                     );
                   },
