@@ -94,6 +94,7 @@ class _PartiesPageState extends ConsumerState<PartiesPage> {
                 prefixIcon: const Icon(Icons.search),
                 suffixIcon: _searchQuery.isNotEmpty
                     ? IconButton(
+                        tooltip: 'Clear',
                         icon: const Icon(Icons.clear),
                         onPressed: () {
                           _searchController.clear();

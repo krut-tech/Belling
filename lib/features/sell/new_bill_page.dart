@@ -219,6 +219,7 @@ class _NewBillPageState extends ConsumerState<NewBillPage> {
                       border: const OutlineInputBorder(),
                       suffixIcon: _searchQuery.isNotEmpty
                           ? IconButton(
+                              tooltip: 'Clear',
                               icon: const Icon(Icons.clear),
                               onPressed: () {
                                 _searchController.clear();
@@ -387,6 +388,7 @@ class _NewBillPageState extends ConsumerState<NewBillPage> {
                                     // Stepper -
                                     IconButton(
                                       constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+                                      tooltip: 'Quantity kam karo',
                                       icon: const Icon(Icons.remove_circle_outline),
                                       onPressed: () {
                                         final newQty = line.qtyMilli - 1000;
@@ -413,6 +415,7 @@ class _NewBillPageState extends ConsumerState<NewBillPage> {
                                     // Stepper +
                                     IconButton(
                                       constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+                                      tooltip: 'Quantity badhao',
                                       icon: const Icon(Icons.add_circle_outline),
                                       onPressed: () {
                                         ref.read(newBillProvider.notifier).updateLineQty(index, line.qtyMilli + 1000);
@@ -426,6 +429,7 @@ class _NewBillPageState extends ConsumerState<NewBillPage> {
                                 // Discount button
                                 IconButton(
                                   constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+                                  tooltip: 'Discount',
                                   icon: Icon(
                                     Icons.discount,
                                     color: line.discountPaise > 0 ? Colors.green : Colors.grey,

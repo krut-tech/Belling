@@ -36,6 +36,10 @@ final appReadyProvider = FutureProvider<void>((ref) async {
     supabaseReady,
     ref.read(initializeAppProvider.future),
   ]);
+  // Make sure the real business/device ids are loaded before any screen can
+  // build a repository with the 'local-*' fallback ids.
+  await ref.read(activeBusinessProvider.future);
+  await ref.read(activeDeviceProvider.future);
 });
 
 void main() {

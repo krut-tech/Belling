@@ -16,6 +16,7 @@ class FadeSlideIn extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (MediaQuery.maybeOf(context)?.disableAnimations ?? false) return child;
     final delayMs = (index.clamp(0, 8)) * 40;
     final total = 320 + delayMs;
     return TweenAnimationBuilder<double>(
@@ -50,7 +51,9 @@ class _TabFadeInState extends State<TabFadeIn> with SingleTickerProviderStateMix
   @override
   void didUpdateWidget(TabFadeIn old) {
     super.didUpdateWidget(old);
-    if (old.index != widget.index) _c.forward(from: 0);
+    if (old.index != widget.index && !(MediaQuery.maybeOf(context)?.disableAnimations ?? false)) {
+      _c.forward(from: 0);
+    }
   }
 
   @override
@@ -80,6 +83,7 @@ class PopIn extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (MediaQuery.maybeOf(context)?.disableAnimations ?? false) return child;
     return TweenAnimationBuilder<double>(
       tween: Tween(begin: 0, end: 1),
       duration: const Duration(milliseconds: 600) + delay,

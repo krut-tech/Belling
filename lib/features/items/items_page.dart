@@ -46,6 +46,7 @@ class _ItemsPageState extends ConsumerState<ItemsPage> {
                 suffixIcon: _searchQuery.isNotEmpty
                     ? IconButton(
                         constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+                        tooltip: 'Clear',
                         icon: const Icon(Icons.clear),
                         onPressed: () {
                           _searchController.clear();
