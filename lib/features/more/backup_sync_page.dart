@@ -43,7 +43,6 @@ class _BackupAndSyncPageState extends ConsumerState<BackupAndSyncPage> {
 
     try {
       final authService = ref.read(authSyncServiceProvider);
-      ExistingBusinessChoice? choice;
 
       if (_isSignUpMode) {
         final res = await authService.signUp(email, password);
@@ -56,23 +55,47 @@ class _BackupAndSyncPageState extends ConsumerState<BackupAndSyncPage> {
         await authService.signIn(email, password);
       }
 
-      choice = await authService.onSignedIn();
-
-      if (mounted && choice != null) {
-        await _showExistingBusinessDialog(choice);
-      }
-
-      if (mounted) {
-        try {
-          ref.read(pushWorkerProvider).triggerPush();
-        } catch (_) {}
-      }
+      await _afterSignIn(authService);
     } catch (e) {
       setState(() => _errorMessage = e.toString());
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
       }
+    }
+  }
+
+  Future<void> _afterSignIn(AuthSyncService authService) async {
+    final choice = await authService.onSignedIn();
+    if (mounted && choice != null) {
+      await _showExistingBusinessDialog(choice);
+    }
+    if (mounted) {
+      try {
+        ref.read(pushWorkerProvider).triggerPush();
+        ref.read(pullWorkerProvider).pullSoon();
+      } catch (_) {}
+    }
+  }
+
+  Future<void> _handleGoogle() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+    try {
+      final authService = ref.read(authSyncServiceProvider);
+      await authService.startGoogleSignIn();
+      final ok = await authService.waitForSignIn();
+      if (!ok) {
+        setState(() => _errorMessage = 'Google sign-in poora nahi hua. Dobara try karo.');
+        return;
+      }
+      await _afterSignIn(authService);
+    } catch (e) {
+      setState(() => _errorMessage = e.toString());
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -314,6 +337,13 @@ class _BackupAndSyncPageState extends ConsumerState<BackupAndSyncPage> {
                                 child: CircularProgressIndicator(strokeWidth: 2),
                               )
                             : Text(_isSignUpMode ? 'Sign Up' : 'Sign In'),
+                      ),
+                      const SizedBox(height: 8),
+                      OutlinedButton.icon(
+                        onPressed: _isLoading ? null : _handleGoogle,
+                        icon: const Icon(Icons.g_mobiledata, size: 28),
+                        label: const Text('Continue with Google'),
+                        style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(48)),
                       ),
                       const SizedBox(height: 8),
                       TextButton(

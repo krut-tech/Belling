@@ -25,7 +25,20 @@ class GstSummaryPage extends ConsumerWidget {
           summaryAsync.maybeWhen(
             data: (summary) => Padding(
               padding: const EdgeInsets.only(right: 8.0),
-              child: IconButton(
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.description_outlined),
+                    tooltip: 'GSTR-1 export (CA ke liye)',
+                    constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+                    onPressed: () async {
+                      final db = ref.read(databaseProvider);
+                      final businessId = ref.read(currentBusinessIdProvider);
+                      await CsvExportService(db, businessId).exportGstr1Csv(dateRange.start, dateRange.end);
+                    },
+                  ),
+                  IconButton(
                 icon: const Icon(Icons.share),
                 tooltip: l10n.exportCsv,
                 constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
@@ -35,6 +48,8 @@ class GstSummaryPage extends ConsumerWidget {
                   final exporter = CsvExportService(db, businessId);
                   await exporter.exportGstSummaryCsv(summary);
                 },
+              ),
+                ],
               ),
             ),
             orElse: () => const SizedBox.shrink(),

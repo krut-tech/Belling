@@ -57,6 +57,34 @@ class AuthSyncService {
     return res;
   }
 
+  /// Deep link registered in AndroidManifest and in Supabase > Auth > URL
+  /// Configuration > Redirect URLs.
+  static const String oauthRedirect = 'io.supabase.belling://login-callback/';
+
+  /// Opens the Google sign-in page in the browser. The session arrives later
+  /// through the deep link; wait for it with [waitForSignIn].
+  Future<void> startGoogleSignIn() async {
+    final client = _requireClient();
+    await client.auth.signInWithOAuth(
+      OAuthProvider.google,
+      redirectTo: oauthRedirect,
+      authScreenLaunchMode: LaunchMode.externalApplication,
+    );
+  }
+
+  Future<bool> waitForSignIn({Duration timeout = const Duration(minutes: 3)}) async {
+    final client = _requireClient();
+    if (client.auth.currentSession != null) return true;
+    try {
+      await client.auth.onAuthStateChange
+          .firstWhere((s) => s.event == AuthChangeEvent.signedIn && s.session != null)
+          .timeout(timeout);
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
   Future<void> signOut({bool force = false}) async {
     final client = _requireClient();
     if (!force) {
