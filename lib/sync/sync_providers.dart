@@ -6,6 +6,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../data/database.dart';
 import '../data/providers.dart';
 import 'auth_sync_service.dart';
+import 'pull_service.dart';
 import 'push_worker.dart';
 import 'supabase_sync_remote.dart';
 import 'sync_remote.dart';
@@ -32,6 +33,26 @@ final pushWorkerProvider = Provider<PushWorker>((ref) {
   return worker;
 });
 
+final pullWorkerProvider = Provider<PullWorker>((ref) {
+  final db = ref.watch(databaseProvider);
+  final remote = ref.watch(syncRemoteProvider);
+  if (remote is! PullRemote) {
+    throw StateError('Remote does not support pulling');
+  }
+  final client = Supabase.instance.client;
+  final worker = PullWorker(
+    service: PullService(db, remote as PullRemote),
+    triggers: [
+      // pull right after sign-in / token refresh
+      client.auth.onAuthStateChange.map((_) {}),
+      Connectivity().onConnectivityChanged.where((r) => r.any((c) => c != ConnectivityResult.none)).map((_) {}),
+    ],
+  );
+  worker.start();
+  ref.onDispose(worker.stop);
+  return worker;
+});
+
 /// Starts the push worker as soon as the app is running, so queued commands
 /// are sent without the user opening the sync screen. Never throws: sync is
 /// optional and must not stop the app (e.g. Supabase could not initialise).
@@ -39,7 +60,12 @@ final syncBootstrapProvider = Provider<void>((ref) {
   try {
     ref.watch(pushWorkerProvider);
   } catch (e) {
-    debugPrint('Background sync not started: $e');
+    debugPrint('Background push not started: $e');
+  }
+  try {
+    ref.watch(pullWorkerProvider);
+  } catch (e) {
+    debugPrint('Background pull not started: $e');
   }
 });
 

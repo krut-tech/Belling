@@ -1,10 +1,34 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'pull_service.dart';
 import 'sync_remote.dart';
 
-class SupabaseSyncRemote implements SyncRemote, SyncRemoteExtras {
+class SupabaseSyncRemote implements SyncRemote, SyncRemoteExtras, PullRemote {
   final SupabaseClient client;
 
   SupabaseSyncRemote(this.client);
+
+  @override
+  bool get canPull => client.auth.currentSession != null;
+
+  @override
+  Future<List<Map<String, dynamic>>> fetchChanges({
+    required String table,
+    required String businessId,
+    required int afterSeq,
+    required int limit,
+  }) async {
+    return _withAuthRetry(() async {
+      final key = table == 'businesses' ? 'id' : 'business_id';
+      final rows = await client
+          .from(table)
+          .select()
+          .eq(key, businessId)
+          .gt('server_seq', afterSeq)
+          .order('server_seq', ascending: true)
+          .limit(limit);
+      return List<Map<String, dynamic>>.from(rows);
+    });
+  }
 
   @override
   bool get isReady => client.auth.currentSession != null;
