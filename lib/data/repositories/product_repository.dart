@@ -58,6 +58,15 @@ class ProductRepository {
     });
   }
 
+  /// A UPC-A code (12 digits) is often reported as EAN-13 with a leading 0 and
+  /// vice versa, so look up both spellings.
+  List<String> _barcodeVariants(String code) {
+    final v = <String>{code};
+    if (RegExp(r'^\d{12}$').hasMatch(code)) v.add('0$code');
+    if (RegExp(r'^0\d{12}$').hasMatch(code)) v.add(code.substring(1));
+    return v.toList();
+  }
+
   /// Gets a single product by barcode for the current business.
   Future<ProductWithStock?> getByBarcode(String barcode) async {
     final cleanBarcode = barcode.trim();
@@ -72,10 +81,11 @@ class ProductRepository {
     ])
       ..where(
         db.products.businessId.equals(businessId) &
-            db.products.barcode.equals(cleanBarcode),
+            db.products.barcode.isIn(_barcodeVariants(cleanBarcode)),
       )
       ..groupBy([db.products.id])
-      ..addColumns([stockQtyExp]);
+      ..addColumns([stockQtyExp])
+      ..limit(1);
 
     final row = await query.getSingleOrNull();
     if (row == null) return null;

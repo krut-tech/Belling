@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import '../../l10n/app_localizations.dart';
 
@@ -20,6 +21,22 @@ class BarcodeScannerDialog extends StatefulWidget {
 class _BarcodeScannerDialogState extends State<BarcodeScannerDialog> {
   late bool _useManualInput;
   final _controller = TextEditingController();
+  late final MobileScannerController _scanner = MobileScannerController(
+    formats: const [
+      BarcodeFormat.ean13,
+      BarcodeFormat.ean8,
+      BarcodeFormat.upcA,
+      BarcodeFormat.upcE,
+      BarcodeFormat.code128,
+      BarcodeFormat.code39,
+      BarcodeFormat.qrCode,
+    ],
+    detectionSpeed: DetectionSpeed.noDuplicates,
+    facing: CameraFacing.back,
+    autoStart: true,
+  );
+  bool _handled = false;
+  bool _torchOn = false;
 
   @override
   void initState() {
@@ -33,12 +50,18 @@ class _BarcodeScannerDialogState extends State<BarcodeScannerDialog> {
   @override
   void dispose() {
     _controller.dispose();
+    _scanner.dispose();
     super.dispose();
   }
 
   void _submitCode(String code) {
+    // onDetect fires many times per second; pop exactly once, otherwise the
+    // extra pops close the page underneath the dialog.
+    if (_handled) return;
     final trimmed = code.trim();
     if (trimmed.isNotEmpty) {
+      _handled = true;
+      HapticFeedback.mediumImpact();
       Navigator.of(context).pop(trimmed);
     }
   }
@@ -52,6 +75,16 @@ class _BarcodeScannerDialogState extends State<BarcodeScannerDialog> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(l10n.scanTitle),
+          if (!_useManualInput)
+            IconButton(
+              constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+              icon: Icon(_torchOn ? Icons.flash_on : Icons.flash_off),
+              tooltip: 'Torch',
+              onPressed: () async {
+                await _scanner.toggleTorch();
+                if (mounted) setState(() => _torchOn = !_torchOn);
+              },
+            ),
           IconButton(
             constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
             icon: Icon(_useManualInput ? Icons.camera_alt : Icons.keyboard),
@@ -65,8 +98,8 @@ class _BarcodeScannerDialogState extends State<BarcodeScannerDialog> {
         ],
       ),
       content: SizedBox(
-        width: 320,
-        height: 320,
+        width: 340,
+        height: 420,
         child: _useManualInput ? _buildManualInput(l10n) : _buildCameraScanner(l10n),
       ),
       actions: [
@@ -111,47 +144,77 @@ class _BarcodeScannerDialogState extends State<BarcodeScannerDialog> {
 
   Widget _buildCameraScanner(AppLocalizations l10n) {
     return ClipRRect(
-      borderRadius: BorderRadius.circular(12),
-      child: MobileScanner(
-        onDetect: (capture) {
-          final barcodes = capture.barcodes;
-          if (barcodes.isNotEmpty) {
-            final code = barcodes.first.rawValue;
-            if (code != null && code.trim().isNotEmpty) {
-              _submitCode(code);
-            }
-          }
-        },
-        errorBuilder: (context, error, child) {
-          return Center(
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.videocam_off, size: 48, color: Colors.red),
-                  const SizedBox(height: 8),
-                  Text(
-                    l10n.cameraNotAvailable,
-                    textAlign: TextAlign.center,
+      borderRadius: BorderRadius.circular(16),
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          MobileScanner(
+            controller: _scanner,
+            fit: BoxFit.cover,
+            onDetect: (capture) {
+              for (final b in capture.barcodes) {
+                final code = b.rawValue;
+                if (code != null && code.trim().isNotEmpty) {
+                  _submitCode(code);
+                  return;
+                }
+              }
+            },
+            errorBuilder: (context, error, child) {
+              return Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.videocam_off, size: 48, color: Colors.red),
+                      const SizedBox(height: 8),
+                      Text(
+                        error.errorCode == MobileScannerErrorCode.permissionDenied
+                            ? 'Camera permission band hai. Phone Settings > Apps > belling > Permissions me Camera allow karo.'
+                            : l10n.cameraNotAvailable,
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 12),
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          minimumSize: const Size.fromHeight(48),
+                        ),
+                        onPressed: () => setState(() => _useManualInput = true),
+                        child: Text(l10n.typeOrScanBarcode),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 12),
-                  ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      minimumSize: const Size.fromHeight(48),
-                    ),
-                    onPressed: () {
-                      setState(() {
-                        _useManualInput = true;
-                      });
-                    },
-                    child: Text(l10n.typeOrScanBarcode),
-                  ),
-                ],
+                ),
+              );
+            },
+          ),
+          // Aiming frame
+          IgnorePointer(
+            child: Center(
+              child: Container(
+                width: 260,
+                height: 150,
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.white, width: 2),
+                  borderRadius: BorderRadius.circular(14),
+                ),
               ),
             ),
-          );
-        },
+          ),
+          const Positioned(
+            left: 0,
+            right: 0,
+            bottom: 12,
+            child: IgnorePointer(
+              child: Text(
+                'Barcode ko frame ke andar rakho',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.white, shadows: [Shadow(blurRadius: 6)]),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
