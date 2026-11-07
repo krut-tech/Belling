@@ -146,6 +146,11 @@ void main() {
       await tester.pump(const Duration(milliseconds: 200));
 
       expect(find.text('Business settings saved'), findsOneWidget);
+
+      // Unmount inside the test so drift's stream-cleanup timer runs before
+      // the test ends (otherwise: "A Timer is still pending").
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump(const Duration(milliseconds: 1));
     });
   });
 }

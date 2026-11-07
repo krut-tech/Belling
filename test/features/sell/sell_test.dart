@@ -12,6 +12,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
   group('Task 4: Sell & Invoice Tests', () {
     late AppDatabase db;
     late ProductRepository productRepo;

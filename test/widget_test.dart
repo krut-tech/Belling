@@ -35,5 +35,8 @@ void main() {
     expect(find.text('Parties'), findsOneWidget);
     expect(find.text('Reports'), findsOneWidget);
     expect(find.text('More'), findsOneWidget);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump(const Duration(milliseconds: 1));
   });
 }
