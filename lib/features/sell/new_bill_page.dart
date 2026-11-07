@@ -1,3 +1,5 @@
+import 'package:qr_flutter/qr_flutter.dart';
+import '../../core/invoice_pdf.dart' show buildUpiQrUri;
 import 'package:flutter/material.dart';
 import '../../core/widgets/motion.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -659,6 +661,65 @@ class _BottomTaxAndPaymentSectionState extends ConsumerState<_BottomTaxAndPaymen
     super.dispose();
   }
 
+  /// Shows the shop's UPI QR with the exact amount, so the customer can scan
+  /// it and pay right away.
+  void _showUpiQr() {
+    final business = ref.read(activeBusinessProvider).valueOrNull;
+    final upiId = business?.upiId?.trim() ?? '';
+    final bill = ref.read(newBillProvider);
+    final amount = bill.paidAmountPaise > 0 ? bill.paidAmountPaise : bill.grandTotalPaise;
+
+    if (upiId.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('UPI ID set nahi hai. More > Business settings mein UPI ID daalo.')),
+      );
+      return;
+    }
+    if (amount <= 0) return;
+
+    final uri = buildUpiQrUri(
+      upiId: upiId,
+      sellerName: business?.name ?? 'Shop',
+      number: 'Bill',
+      balancePaise: amount,
+      docType: 'invoice',
+    );
+    if (uri == null) return;
+
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(business?.name ?? 'Pay via UPI', textAlign: TextAlign.center),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              color: Colors.white,
+              padding: const EdgeInsets.all(8),
+              child: QrImageView(data: uri, size: 240, backgroundColor: Colors.white),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              formatRupees(amount),
+              style: Theme.of(ctx).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 4),
+            Text('UPI ID: $upiId', style: Theme.of(ctx).textTheme.bodySmall),
+            const SizedBox(height: 8),
+            const Text(
+              'Customer scan karke yahi amount pay kare. Payment aane ke baad Issue Invoice dabao.',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 12),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Close')),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -766,7 +827,10 @@ class _BottomTaxAndPaymentSectionState extends ConsumerState<_BottomTaxAndPaymen
                           _PaymentChip(
                             label: l10n.upi,
                             selected: billState.paymentMethod == 'upi',
-                            onSelected: () => ref.read(newBillProvider.notifier).setPaymentMethod('upi'),
+                            onSelected: () {
+                              ref.read(newBillProvider.notifier).setPaymentMethod('upi');
+                              _showUpiQr();
+                            },
                           ),
                           _PaymentChip(
                             label: l10n.card,
@@ -783,6 +847,15 @@ class _BottomTaxAndPaymentSectionState extends ConsumerState<_BottomTaxAndPaymen
                   ),
                 ],
               ),
+              if (billState.paymentMethod == 'upi')
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: TextButton.icon(
+                    onPressed: _showUpiQr,
+                    icon: const Icon(Icons.qr_code_2),
+                    label: const Text('UPI QR dikhao'),
+                  ),
+                ),
               const SizedBox(height: 12),
 
               // Paid Amount Input (Partial Payment)
