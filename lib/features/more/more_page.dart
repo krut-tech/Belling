@@ -49,6 +49,23 @@ class MorePage extends ConsumerWidget {
           ),
           const SizedBox(height: 16),
 
+          // Bill design, paper size, stationary
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.receipt_long, color: Colors.deepPurple, size: 32),
+              title: const Text(
+                'Bill design & paper',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              subtitle: const Text('Paper size, your own stationary/letterhead, logo, colours'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () {
+                context.push('/more/invoice-design');
+              },
+            ),
+          ),
+          const SizedBox(height: 16),
+
           // Business Settings
           const _BusinessSettingsSection(),
           const SizedBox(height: 16),

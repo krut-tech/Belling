@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import 'features/items/items_page.dart';
 import 'features/more/backup_sync_page.dart';
+import 'features/more/invoice_design_page.dart';
 import 'features/more/more_page.dart';
 import 'features/parties/parties_page.dart';
 import 'features/reports/gst_summary_page.dart';
@@ -102,6 +103,10 @@ final appRouter = GoRouter(
                 GoRoute(
                   path: 'backup-sync',
                   builder: (context, state) => const BackupAndSyncPage(),
+                ),
+                GoRoute(
+                  path: 'invoice-design',
+                  builder: (context, state) => const InvoiceDesignPage(),
                 ),
               ],
             ),

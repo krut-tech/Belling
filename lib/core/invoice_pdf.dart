@@ -9,6 +9,7 @@ import 'package:printing/printing.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../data/database.dart';
+import 'invoice_style.dart';
 import 'money.dart';
 
 /// Helper to load font bytes with fallback for test environment
@@ -126,7 +127,13 @@ String? buildUpiQrUri({
   return 'upi://pay?pa=$upiId&pn=${Uri.encodeComponent(sellerName)}&tn=${Uri.encodeComponent(number)}&am=${formatPaiseForUpi(balancePaise)}&cu=INR';
 }
 
-/// Generates an A4 PDF Tax Invoice using ONLY snapshot_json and document lines.
+/// Generates a Tax Invoice / Bill of Supply / Credit Note PDF using ONLY
+/// snapshot_json and document lines.
+///
+/// [style] only changes presentation (paper, layout, colours, logo, stationary
+/// background). Every amount and legal field comes from the issued document.
+/// [dialogFormat] is the paper chosen in the print dialog; it is used when the
+/// style's paper is "auto".
 Future<Uint8List> generateInvoicePdf({
   required String snapshotJson,
   required List<DocumentLine> lines,
@@ -138,6 +145,9 @@ Future<Uint8List> generateInvoicePdf({
   Uint8List? interBoldBytes,
   Uint8List? devanagariBytes,
   Uint8List? gujaratiBytes,
+  InvoiceStyle? style,
+  InvoiceAssets? assets,
+  PdfPageFormat? dialogFormat,
 }) async {
   final regBytes = interRegularBytes ?? await loadFontBytes('assets/fonts/Inter-Regular.ttf');
   final boldBytes = interBoldBytes ?? await loadFontBytes('assets/fonts/Inter-Bold.ttf');
@@ -209,77 +219,196 @@ Future<Uint8List> generateInvoicePdf({
     documentTitle = 'BILL OF SUPPLY';
   }
 
+  // ---- Style -------------------------------------------------------------
+  final st = style ?? InvoiceStyle.classicDefault;
+  var format = st.pageFormat(dialogFormat: dialogFormat);
+  final layout = st.effectiveLayout(format);
+  final isReceipt = layout == InvoiceLayout.receipt;
+  final isCompact = layout == InvoiceLayout.compact;
+  final margin = st.margins(format);
+  // A roll has no fixed length: let the page grow with the content.
+  if (isReceipt) format = PdfPageFormat(format.width, double.infinity);
+
+  final scale = st.fontScale * (isCompact ? 0.88 : 1.0);
+  final accent = PdfColor.fromInt(0xFF000000 | st.accentColor);
+  final accentLight = _tint(accent, 0.88);
+
+  pw.TextStyle ts(double size, {bool bold = false, PdfColor? color}) => pw.TextStyle(
+        fontSize: size * scale,
+        fontWeight: bold ? pw.FontWeight.bold : pw.FontWeight.normal,
+        color: color,
+      );
+
+  final logoImage = st.showLogo ? _tryImage(assets?.logo) : null;
+  final backgroundImage = isReceipt ? null : _tryImage(assets?.background);
+
+  final pageTheme = pw.PageTheme(
+    pageFormat: format,
+    margin: pw.EdgeInsets.fromLTRB(margin.left, margin.top, margin.right, margin.bottom),
+    theme: theme,
+    buildBackground: backgroundImage == null
+        ? null
+        : (pw.Context context) => pw.FullPage(
+              ignoreMargins: true,
+              child: pw.Image(
+                backgroundImage,
+                fit: st.backgroundFit == BackgroundFit.full ? pw.BoxFit.fill : pw.BoxFit.contain,
+              ),
+            ),
+  );
+
+  pw.Widget cancelledBanner() => pw.Container(
+        width: double.infinity,
+        padding: const pw.EdgeInsets.all(6),
+        margin: const pw.EdgeInsets.only(bottom: 12),
+        color: PdfColors.red100,
+        child: pw.Center(
+          child: pw.Text('CANCELLED', style: ts(16, bold: true, color: PdfColors.red900)),
+        ),
+      );
+
   final pdf = pw.Document(theme: theme);
+
+  if (isReceipt) {
+    pdf.addPage(
+      pw.Page(
+        pageTheme: pageTheme,
+        build: (pw.Context context) {
+          final small = ts(8);
+          final smallBold = ts(8, bold: true);
+          pw.Widget kv(String k, String v, {bool bold = false, double size = 8}) => pw.Padding(
+                padding: const pw.EdgeInsets.symmetric(vertical: 1),
+                child: pw.Row(
+                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                  children: [
+                    pw.Text(k, style: ts(size, bold: bold)),
+                    pw.Text(v, style: ts(size, bold: bold)),
+                  ],
+                ),
+              );
+          pw.Widget dash() => pw.Divider(borderStyle: pw.BorderStyle.dashed, height: 8);
+
+          return pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.stretch,
+            children: [
+              if (docStatus == 'cancelled') cancelledBanner(),
+              if (logoImage != null)
+                pw.Center(child: pw.Image(logoImage, height: 36 * st.fontScale, fit: pw.BoxFit.contain)),
+              pw.Center(child: pw.Text(sellerName, style: ts(12, bold: true, color: accent), textAlign: pw.TextAlign.center)),
+              if (sellerAddress.isNotEmpty)
+                pw.Center(child: pw.Text(sellerAddress, style: small, textAlign: pw.TextAlign.center)),
+              if (sellerGstin != null && sellerGstin.isNotEmpty)
+                pw.Center(child: pw.Text('GSTIN: $sellerGstin', style: small)),
+              pw.SizedBox(height: 4),
+              pw.Center(child: pw.Text(documentTitle, style: ts(10, bold: true))),
+              dash(),
+              kv('No: $number', dateStr),
+              pw.Text('To: $buyerName', style: smallBold),
+              if (buyerPhone != null && buyerPhone.isNotEmpty) pw.Text('Ph: $buyerPhone', style: small),
+              if (buyerGstin != null && buyerGstin.isNotEmpty) pw.Text('GSTIN: $buyerGstin', style: small),
+              dash(),
+              for (final l in lines) ...[
+                pw.Text(l.name, style: smallBold),
+                kv(
+                  '${formatMilliUnits(l.qtyMilli)} x ${formatRupees(l.ratePaise)}'
+                  '${l.discountPaise > 0 ? '  -${formatRupees(l.discountPaise)}' : ''}',
+                  formatRupees(l.lineTotalPaise),
+                ),
+                pw.Text(
+                  '${st.showHsn && l.hsn.isNotEmpty ? 'HSN ${l.hsn}  ' : ''}GST ${formatGstRateBp(l.gstRateBp)}%',
+                  style: ts(6.5, color: PdfColors.grey700),
+                ),
+                pw.SizedBox(height: 2),
+              ],
+              dash(),
+              kv('Taxable', formatRupees(taxablePaise)),
+              if (cgstPaise > 0) kv('CGST', formatRupees(cgstPaise)),
+              if (sgstPaise > 0) kv('SGST', formatRupees(sgstPaise)),
+              if (igstPaise > 0) kv('IGST', formatRupees(igstPaise)),
+              if (roundOffPaise != 0) kv('Round-off', formatRupees(roundOffPaise)),
+              pw.Divider(height: 8),
+              kv('TOTAL', formatRupees(totalPaise), bold: true, size: 11),
+              if (type != 'credit_note' && paidPaise > 0) kv('Paid', formatRupees(paidPaise)),
+              if (type != 'credit_note' && balancePaise > 0) kv('Balance', formatRupees(balancePaise), bold: true),
+              pw.SizedBox(height: 4),
+              pw.Text(amountInWords(totalPaise), style: ts(7, bold: true)),
+              if (st.showQr && upiQrUri != null) ...[
+                pw.SizedBox(height: 6),
+                pw.Center(child: pw.Text('Pay via UPI', style: smallBold)),
+                pw.Center(
+                  child: pw.BarcodeWidget(
+                    barcode: pw.Barcode.qrCode(),
+                    data: upiQrUri,
+                    width: 80,
+                    height: 80,
+                  ),
+                ),
+                pw.Center(child: pw.Text('$upiId', style: ts(7))),
+              ],
+              if (st.showTerms && invoiceTerms != null && invoiceTerms.isNotEmpty) ...[
+                pw.SizedBox(height: 6),
+                pw.Text(invoiceTerms, style: ts(7)),
+              ],
+              pw.SizedBox(height: 6),
+              pw.Center(child: pw.Text('Thank you!', style: smallBold)),
+            ],
+          );
+        },
+      ),
+    );
+    return pdf.save();
+  }
 
   pdf.addPage(
     pw.MultiPage(
-      pageFormat: PdfPageFormat.a4,
-      margin: const pw.EdgeInsets.all(24),
+      pageTheme: pageTheme,
       build: (pw.Context context) {
         return [
-          // Cancelled Header Banner
-          if (docStatus == 'cancelled')
-            pw.Container(
-              width: double.infinity,
-              padding: const pw.EdgeInsets.all(6),
-              margin: const pw.EdgeInsets.only(bottom: 12),
-              color: PdfColors.red100,
-              child: pw.Center(
-                child: pw.Text(
-                  'CANCELLED',
-                  style: const pw.TextStyle(
-                    color: PdfColors.red900,
-                    fontWeight: pw.FontWeight.bold,
-                    fontSize: 16,
-                  ),
-                ),
-              ),
-            ),
+          if (docStatus == 'cancelled') cancelledBanner(),
 
           // Header Row
           pw.Row(
             crossAxisAlignment: pw.CrossAxisAlignment.start,
             mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
             children: [
-              pw.Column(
-                crossAxisAlignment: pw.CrossAxisAlignment.start,
-                children: [
-                  pw.Text(
-                    sellerName,
-                    style: const pw.TextStyle(
-                      fontSize: 18,
-                      fontWeight: pw.FontWeight.bold,
+              pw.Expanded(
+                child: pw.Row(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    if (logoImage != null) ...[
+                      pw.Image(logoImage, height: 48 * st.fontScale, fit: pw.BoxFit.contain),
+                      pw.SizedBox(width: 10),
+                    ],
+                    pw.Expanded(
+                      child: pw.Column(
+                        crossAxisAlignment: pw.CrossAxisAlignment.start,
+                        children: [
+                          pw.Text(sellerName, style: ts(18, bold: true, color: accent)),
+                          if (sellerAddress.isNotEmpty) pw.Text(sellerAddress, style: ts(10)),
+                          if (sellerGstin != null && sellerGstin.isNotEmpty)
+                            pw.Text('GSTIN: $sellerGstin', style: ts(10)),
+                          if (sellerStateCode.isNotEmpty) pw.Text('State Code: $sellerStateCode', style: ts(10)),
+                        ],
+                      ),
                     ),
-                  ),
-                  if (sellerAddress.isNotEmpty)
-                    pw.Text(sellerAddress, style: const pw.TextStyle(fontSize: 10)),
-                  if (sellerGstin != null && sellerGstin.isNotEmpty)
-                    pw.Text('GSTIN: $sellerGstin', style: const pw.TextStyle(fontSize: 10)),
-                  if (sellerStateCode.isNotEmpty)
-                    pw.Text('State Code: $sellerStateCode', style: const pw.TextStyle(fontSize: 10)),
-                ],
+                  ],
+                ),
               ),
+              pw.SizedBox(width: 12),
               pw.Column(
                 crossAxisAlignment: pw.CrossAxisAlignment.end,
                 children: [
-                  pw.Text(
-                    documentTitle,
-                    style: const pw.TextStyle(
-                      fontSize: 16,
-                      fontWeight: pw.FontWeight.bold,
-                    ),
-                  ),
+                  pw.Text(documentTitle, style: ts(16, bold: true, color: accent)),
                   pw.SizedBox(height: 4),
-                  pw.Text('Number: $number', style: const pw.TextStyle(fontSize: 10)),
-                  if (dateStr.isNotEmpty)
-                    pw.Text('Date: $dateStr', style: const pw.TextStyle(fontSize: 10)),
+                  pw.Text('Number: $number', style: ts(10)),
+                  if (dateStr.isNotEmpty) pw.Text('Date: $dateStr', style: ts(10)),
                 ],
               ),
             ],
           ),
 
           pw.SizedBox(height: 12),
-          pw.Divider(),
+          pw.Divider(color: accent),
           pw.SizedBox(height: 8),
 
           // Bill To Section
@@ -293,15 +422,13 @@ Future<Uint8List> generateInvoicePdf({
             child: pw.Column(
               crossAxisAlignment: pw.CrossAxisAlignment.start,
               children: [
-                pw.Text('Bill To:', style: const pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10)),
+                pw.Text('Bill To:', style: ts(10, bold: true)),
                 pw.SizedBox(height: 2),
-                pw.Text(buyerName, style: const pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold)),
-                if (buyerPhone != null && buyerPhone.isNotEmpty)
-                  pw.Text('Phone: $buyerPhone', style: const pw.TextStyle(fontSize: 9)),
-                if (buyerGstin != null && buyerGstin.isNotEmpty)
-                  pw.Text('GSTIN: $buyerGstin', style: const pw.TextStyle(fontSize: 9)),
+                pw.Text(buyerName, style: ts(11, bold: true)),
+                if (buyerPhone != null && buyerPhone.isNotEmpty) pw.Text('Phone: $buyerPhone', style: ts(9)),
+                if (buyerGstin != null && buyerGstin.isNotEmpty) pw.Text('GSTIN: $buyerGstin', style: ts(9)),
                 if (buyerStateCode != null && buyerStateCode.isNotEmpty)
-                  pw.Text('State Code: $buyerStateCode', style: const pw.TextStyle(fontSize: 9)),
+                  pw.Text('State Code: $buyerStateCode', style: ts(9)),
               ],
             ),
           ),
@@ -310,39 +437,41 @@ Future<Uint8List> generateInvoicePdf({
 
           // Items Table
           pw.TableHelper.fromTextArray(
-            headers: const ['Item', 'HSN', 'Qty', 'Rate', 'Disc', 'Taxable', 'GST %', 'Amount'],
-            headerStyle: const pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9),
-            cellStyle: const pw.TextStyle(fontSize: 9),
-            headerDecoration: const pw.BoxDecoration(color: PdfColors.grey200),
+            headers: [
+              'Item',
+              if (st.showHsn) 'HSN',
+              'Qty',
+              'Rate',
+              'Disc',
+              'Taxable',
+              'GST %',
+              'Amount',
+            ],
+            headerStyle: ts(9, bold: true),
+            cellStyle: ts(9),
+            headerDecoration: pw.BoxDecoration(color: accentLight),
             cellAlignment: pw.Alignment.centerLeft,
             headerAlignment: pw.Alignment.centerLeft,
-            columnWidths: const {
-              0: pw.FlexColumnWidth(3), // Item
-              1: pw.FlexColumnWidth(1.2), // HSN
-              2: pw.FlexColumnWidth(1), // Qty
-              3: pw.FlexColumnWidth(1.3), // Rate
-              4: pw.FlexColumnWidth(1), // Disc
-              5: pw.FlexColumnWidth(1.4), // Taxable
-              6: pw.FlexColumnWidth(1.1), // GST %
-              7: pw.FlexColumnWidth(1.5), // Amount
+            columnWidths: {
+              0: const pw.FlexColumnWidth(3), // Item
+              if (st.showHsn) 1: const pw.FlexColumnWidth(1.2), // HSN
+              (st.showHsn ? 2 : 1): const pw.FlexColumnWidth(1), // Qty
+              (st.showHsn ? 3 : 2): const pw.FlexColumnWidth(1.3), // Rate
+              (st.showHsn ? 4 : 3): const pw.FlexColumnWidth(1), // Disc
+              (st.showHsn ? 5 : 4): const pw.FlexColumnWidth(1.4), // Taxable
+              (st.showHsn ? 6 : 5): const pw.FlexColumnWidth(1.1), // GST %
+              (st.showHsn ? 7 : 6): const pw.FlexColumnWidth(1.5), // Amount
             },
             data: lines.map((l) {
-              final qtyStr = formatMilliUnits(l.qtyMilli);
-              final rateStr = formatRupees(l.ratePaise);
-              final discStr = formatRupees(l.discountPaise);
-              final taxableStr = formatRupees(l.taxablePaise);
-              final gstRateStr = '${formatGstRateBp(l.gstRateBp)}%';
-              final amountStr = formatRupees(l.lineTotalPaise);
-
               return [
                 l.name,
-                l.hsn,
-                qtyStr,
-                rateStr,
-                discStr,
-                taxableStr,
-                gstRateStr,
-                amountStr,
+                if (st.showHsn) l.hsn,
+                formatMilliUnits(l.qtyMilli),
+                formatRupees(l.ratePaise),
+                formatRupees(l.discountPaise),
+                formatRupees(l.taxablePaise),
+                '${formatGstRateBp(l.gstRateBp)}%',
+                formatRupees(l.lineTotalPaise),
               ];
             }).toList(),
           ),
@@ -353,13 +482,11 @@ Future<Uint8List> generateInvoicePdf({
           pw.Row(
             crossAxisAlignment: pw.CrossAxisAlignment.start,
             children: [
-              // Tax Summary Table
               pw.Expanded(
                 flex: 5,
-                child: _buildTaxSummaryTable(lines, igstPaise > 0),
+                child: _buildTaxSummaryTable(lines, igstPaise > 0, scale: scale, headerColor: accentLight),
               ),
               pw.SizedBox(width: 16),
-              // Totals Box
               pw.Expanded(
                 flex: 4,
                 child: pw.Container(
@@ -370,13 +497,13 @@ Future<Uint8List> generateInvoicePdf({
                   ),
                   child: pw.Column(
                     children: [
-                      _totalRow('Taxable Amount', formatRupees(taxablePaise)),
-                      if (cgstPaise > 0) _totalRow('CGST', formatRupees(cgstPaise)),
-                      if (sgstPaise > 0) _totalRow('SGST', formatRupees(sgstPaise)),
-                      if (igstPaise > 0) _totalRow('IGST', formatRupees(igstPaise)),
-                      if (roundOffPaise != 0) _totalRow('Round-off', formatRupees(roundOffPaise)),
+                      _totalRow('Taxable Amount', formatRupees(taxablePaise), scale: scale),
+                      if (cgstPaise > 0) _totalRow('CGST', formatRupees(cgstPaise), scale: scale),
+                      if (sgstPaise > 0) _totalRow('SGST', formatRupees(sgstPaise), scale: scale),
+                      if (igstPaise > 0) _totalRow('IGST', formatRupees(igstPaise), scale: scale),
+                      if (roundOffPaise != 0) _totalRow('Round-off', formatRupees(roundOffPaise), scale: scale),
                       pw.Divider(),
-                      _totalRow('Grand Total', formatRupees(totalPaise), isBold: true),
+                      _totalRow('Grand Total', formatRupees(totalPaise), isBold: true, scale: scale),
                     ],
                   ),
                 ),
@@ -391,10 +518,7 @@ Future<Uint8List> generateInvoicePdf({
             width: double.infinity,
             padding: const pw.EdgeInsets.all(6),
             color: PdfColors.grey100,
-            child: pw.Text(
-              'Amount in Words: ${amountInWords(totalPaise)}',
-              style: const pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9),
-            ),
+            child: pw.Text('Amount in Words: ${amountInWords(totalPaise)}', style: ts(9, bold: true)),
           ),
 
           pw.SizedBox(height: 16),
@@ -404,37 +528,40 @@ Future<Uint8List> generateInvoicePdf({
             crossAxisAlignment: pw.CrossAxisAlignment.end,
             mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
             children: [
-              pw.Column(
-                crossAxisAlignment: pw.CrossAxisAlignment.start,
-                children: [
-                  if (upiQrUri != null) ...[
-                    pw.Text('Pay via UPI:', style: const pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 8)),
-                    pw.SizedBox(height: 4),
-                    pw.BarcodeWidget(
-                      barcode: pw.Barcode.qrCode(),
-                      data: upiQrUri,
-                      width: 55,
-                      height: 55,
-                    ),
-                    pw.SizedBox(height: 2),
-                    pw.Text('UPI ID: $upiId', style: const pw.TextStyle(fontSize: 8)),
-                    pw.SizedBox(height: 8),
+              pw.Expanded(
+                child: pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    if (st.showQr && upiQrUri != null) ...[
+                      pw.Text('Pay via UPI:', style: ts(8, bold: true)),
+                      pw.SizedBox(height: 4),
+                      pw.BarcodeWidget(
+                        barcode: pw.Barcode.qrCode(),
+                        data: upiQrUri,
+                        width: 55,
+                        height: 55,
+                      ),
+                      pw.SizedBox(height: 2),
+                      pw.Text('UPI ID: $upiId', style: ts(8)),
+                      pw.SizedBox(height: 8),
+                    ],
+                    if (st.showTerms && invoiceTerms != null && invoiceTerms.isNotEmpty) ...[
+                      pw.Text('Terms & Conditions:', style: ts(8, bold: true)),
+                      pw.SizedBox(height: 2),
+                      pw.Text(invoiceTerms, style: ts(8)),
+                    ],
                   ],
-                  if (invoiceTerms != null && invoiceTerms.isNotEmpty) ...[
-                    pw.Text('Terms & Conditions:', style: const pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 8)),
-                    pw.SizedBox(height: 2),
-                    pw.Text(invoiceTerms, style: const pw.TextStyle(fontSize: 8)),
+                ),
+              ),
+              if (st.showSignature)
+                pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.end,
+                  children: [
+                    pw.Text('For $sellerName', style: ts(9, bold: true)),
+                    pw.SizedBox(height: 30),
+                    pw.Text('Authorised Signatory', style: ts(9)),
                   ],
-                ],
-              ),
-              pw.Column(
-                crossAxisAlignment: pw.CrossAxisAlignment.end,
-                children: [
-                  pw.Text('For $sellerName', style: const pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9)),
-                  pw.SizedBox(height: 30),
-                  pw.Text('Authorised Signatory', style: const pw.TextStyle(fontSize: 9)),
-                ],
-              ),
+                ),
             ],
           ),
         ];
@@ -445,7 +572,23 @@ Future<Uint8List> generateInvoicePdf({
   return pdf.save();
 }
 
-pw.Widget _buildTaxSummaryTable(List<DocumentLine> lines, bool isInterState) {
+pw.MemoryImage? _tryImage(Uint8List? bytes) {
+  if (bytes == null) return null;
+  try {
+    return pw.MemoryImage(bytes);
+  } catch (_) {
+    return null; // unreadable image: print without it
+  }
+}
+
+/// Mixes [c] with white; [amount] 0 = c, 1 = white.
+PdfColor _tint(PdfColor c, double amount) {
+  double mix(double v) => v + (1 - v) * amount;
+  return PdfColor(mix(c.red), mix(c.green), mix(c.blue));
+}
+
+pw.Widget _buildTaxSummaryTable(List<DocumentLine> lines, bool isInterState,
+    {double scale = 1.0, PdfColor headerColor = PdfColors.grey200}) {
   final rateGroups = <int, List<DocumentLine>>{};
   for (final l in lines) {
     rateGroups.putIfAbsent(l.gstRateBp, () => []).add(l);
@@ -486,16 +629,16 @@ pw.Widget _buildTaxSummaryTable(List<DocumentLine> lines, bool isInterState) {
 
   return pw.TableHelper.fromTextArray(
     headers: headers,
-    headerStyle: const pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 8),
-    cellStyle: const pw.TextStyle(fontSize: 8),
-    headerDecoration: const pw.BoxDecoration(color: PdfColors.grey200),
+    headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 8 * scale),
+    cellStyle: pw.TextStyle(fontSize: 8 * scale),
+    headerDecoration: pw.BoxDecoration(color: headerColor),
     data: rows,
   );
 }
 
-pw.Widget _totalRow(String label, String value, {bool isBold = false}) {
+pw.Widget _totalRow(String label, String value, {bool isBold = false, double scale = 1.0}) {
   final style = pw.TextStyle(
-    fontSize: 9,
+    fontSize: 9 * scale,
     fontWeight: isBold ? pw.FontWeight.bold : pw.FontWeight.normal,
   );
   return pw.Padding(
@@ -510,9 +653,12 @@ pw.Widget _totalRow(String label, String value, {bool isBold = false}) {
   );
 }
 
-/// Helper function to share invoice PDF via system share sheet
+/// Helper function to share invoice PDF via system share sheet.
+/// The business's invoice style is applied (auto paper = A4 for a saved PDF).
 Future<void> shareInvoicePdf(AppDatabase db, Document doc, BuildContext context) async {
   final lines = await (db.select(db.documentLines)..where((t) => t.documentId.equals(doc.id))).get();
+  final style = await InvoiceStyleStore.load(db);
+  final assets = await InvoiceStyleStore.loadAssets(style);
   final pdfBytes = await generateInvoicePdf(
     snapshotJson: doc.snapshotJson,
     lines: lines,
@@ -520,6 +666,8 @@ Future<void> shareInvoicePdf(AppDatabase db, Document doc, BuildContext context)
     docType: doc.docType,
     status: doc.status,
     issuedAt: doc.issuedAt,
+    style: style,
+    assets: assets,
   );
 
   final tempDir = await getTemporaryDirectory();
@@ -537,20 +685,29 @@ Future<void> shareInvoicePdf(AppDatabase db, Document doc, BuildContext context)
   );
 }
 
-/// Helper function to print invoice PDF using printing package
+/// Helper function to print invoice PDF using printing package.
+/// With auto paper the page is generated for the paper picked in the print
+/// dialog (A4, A5, a thermal roll ...), so the layout fits whatever is loaded.
 Future<void> printInvoicePdf(AppDatabase db, Document doc) async {
   final lines = await (db.select(db.documentLines)..where((t) => t.documentId.equals(doc.id))).get();
-  final pdfBytes = await generateInvoicePdf(
-    snapshotJson: doc.snapshotJson,
-    lines: lines,
-    docNumber: doc.number,
-    docType: doc.docType,
-    status: doc.status,
-    issuedAt: doc.issuedAt,
-  );
+  final style = await InvoiceStyleStore.load(db);
+  final assets = await InvoiceStyleStore.loadAssets(style);
 
   await Printing.layoutPdf(
-    onLayout: (format) async => pdfBytes,
+    onLayout: (format) => generateInvoicePdf(
+      snapshotJson: doc.snapshotJson,
+      lines: lines,
+      docNumber: doc.number,
+      docType: doc.docType,
+      status: doc.status,
+      issuedAt: doc.issuedAt,
+      style: style,
+      assets: assets,
+      dialogFormat: format,
+    ),
     name: doc.number,
+    format: style.pageFormat().height.isFinite
+        ? style.pageFormat()
+        : PdfPageFormat(style.pageFormat().width, 200 * PdfPageFormat.mm),
   );
 }
