@@ -82,7 +82,7 @@ class PushWorker {
     if (_isPushing) return;
     // Not signed in: leave everything pending. Pushing without a session would
     // be refused by row level security and wrongly marked as rejected.
-    final readyCheck = remote;
+    final Object readyCheck = remote;
     if (readyCheck is SyncRemoteExtras && !readyCheck.isReady) return;
     _isPushing = true;
 
@@ -267,7 +267,7 @@ class PushWorker {
         if (pay == null) {
           throw StateError('Payment $paymentId not found for push_payment');
         }
-        final payRemote = remote;
+        final Object payRemote = remote;
         if (payRemote is! SyncRemoteExtras) {
           throw UnimplementedError('This remote cannot push standalone payments');
         }
@@ -287,7 +287,7 @@ class PushWorker {
         if (movement == null) {
           throw StateError('Stock movement $movementId not found for push_stock_movement');
         }
-        final stockRemote = remote;
+        final Object stockRemote = remote;
         if (stockRemote is! SyncRemoteExtras) {
           throw UnimplementedError('This remote cannot push standalone stock movements');
         }

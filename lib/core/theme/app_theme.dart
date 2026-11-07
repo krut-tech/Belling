@@ -102,14 +102,14 @@ class AppTheme {
           minimumSize: const Size(48, 48),
         ),
       ),
-      dividerTheme: DividerThemeData(color: AppColors.lightBorder, thickness: 1, space: 1),
+      dividerTheme: const DividerThemeData(color: AppColors.lightBorder, thickness: 1, space: 1),
       listTileTheme: ListTileThemeData(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
         contentPadding: const EdgeInsets.symmetric(horizontal: 16),
       ),
       chipTheme: ChipThemeData(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        side: BorderSide(color: AppColors.lightBorder),
+        side: const BorderSide(color: AppColors.lightBorder),
         selectedColor: AppColors.lightPrimary.withValues(alpha: 0.16),
         backgroundColor: AppColors.lightSurface,
         labelStyle: const TextStyle(fontWeight: FontWeight.w600),
@@ -117,16 +117,16 @@ class AppTheme {
       segmentedButtonTheme: SegmentedButtonThemeData(
         style: SegmentedButton.styleFrom(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-          side: BorderSide(color: AppColors.lightBorder),
+          side: const BorderSide(color: AppColors.lightBorder),
         ),
       ),
-      progressIndicatorTheme: ProgressIndicatorThemeData(color: AppColors.lightPrimary),
+      progressIndicatorTheme: const ProgressIndicatorThemeData(color: AppColors.lightPrimary),
       bottomSheetTheme: const BottomSheetThemeData(
         showDragHandle: true,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
       ),
       pageTransitionsTheme: kSmoothPageTransitions,
-      appBarTheme: AppBarTheme(
+      appBarTheme: const AppBarTheme(
         backgroundColor: AppColors.lightBackground,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
@@ -255,14 +255,14 @@ class AppTheme {
           minimumSize: const Size(48, 48),
         ),
       ),
-      dividerTheme: DividerThemeData(color: AppColors.darkBorder, thickness: 1, space: 1),
+      dividerTheme: const DividerThemeData(color: AppColors.darkBorder, thickness: 1, space: 1),
       listTileTheme: ListTileThemeData(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
         contentPadding: const EdgeInsets.symmetric(horizontal: 16),
       ),
       chipTheme: ChipThemeData(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        side: BorderSide(color: AppColors.darkBorder),
+        side: const BorderSide(color: AppColors.darkBorder),
         selectedColor: AppColors.darkPrimary.withValues(alpha: 0.16),
         backgroundColor: AppColors.darkSurface,
         labelStyle: const TextStyle(fontWeight: FontWeight.w600),
@@ -270,16 +270,16 @@ class AppTheme {
       segmentedButtonTheme: SegmentedButtonThemeData(
         style: SegmentedButton.styleFrom(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-          side: BorderSide(color: AppColors.darkBorder),
+          side: const BorderSide(color: AppColors.darkBorder),
         ),
       ),
-      progressIndicatorTheme: ProgressIndicatorThemeData(color: AppColors.darkPrimary),
+      progressIndicatorTheme: const ProgressIndicatorThemeData(color: AppColors.darkPrimary),
       bottomSheetTheme: const BottomSheetThemeData(
         showDragHandle: true,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
       ),
       pageTransitionsTheme: kSmoothPageTransitions,
-      appBarTheme: AppBarTheme(
+      appBarTheme: const AppBarTheme(
         backgroundColor: AppColors.darkBackground,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
