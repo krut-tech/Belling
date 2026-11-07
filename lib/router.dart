@@ -17,6 +17,16 @@ import 'features/parties/party_detail_page.dart';
 
 final appRouter = GoRouter(
   initialLocation: '/sell',
+  redirect: (context, state) {
+    final loc = state.uri.toString();
+    // Google/OAuth deep link (io.supabase.belling://login-callback/?code=...):
+    // supabase_flutter consumes it by itself, the router must just stay on the app.
+    if (loc.startsWith('io.supabase.belling') || state.uri.host == 'login-callback') {
+      return '/sell';
+    }
+    if (state.uri.path == '/' || state.uri.path.isEmpty) return '/sell';
+    return null;
+  },
   routes: [
     StatefulShellRoute.indexedStack(
       builder: (context, state, navigationShell) {
