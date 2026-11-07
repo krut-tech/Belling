@@ -4,6 +4,24 @@ import 'package:flutter/services.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import '../../l10n/app_localizations.dart';
 
+/// EAN-13 / EAN-8 / UPC-A carry a check digit. A camera frame that is blurry or
+/// at an angle can decode to a wrong number with the wrong check digit; such a
+/// read must be ignored (and scanning continue) rather than reported as a
+/// product that "does not exist".
+bool isPlausibleBarcode(String raw) {
+  final code = raw.trim();
+  final isDigits = RegExp(r'^\d+$').hasMatch(code);
+  if (!isDigits) return code.isNotEmpty; // Code128/39/QR etc. have no simple check digit
+  if (code.length != 8 && code.length != 12 && code.length != 13) return true;
+  var sum = 0;
+  for (var i = 0; i < code.length - 1; i++) {
+    final digit = int.parse(code[code.length - 2 - i]);
+    sum += digit * (i.isEven ? 3 : 1);
+  }
+  final check = (10 - sum % 10) % 10;
+  return check == int.parse(code[code.length - 1]);
+}
+
 class BarcodeScannerDialog extends StatefulWidget {
   const BarcodeScannerDialog({super.key});
 
@@ -154,7 +172,7 @@ class _BarcodeScannerDialogState extends State<BarcodeScannerDialog> {
             onDetect: (capture) {
               for (final b in capture.barcodes) {
                 final code = b.rawValue;
-                if (code != null && code.trim().isNotEmpty) {
+                if (code != null && code.trim().isNotEmpty && isPlausibleBarcode(code)) {
                   _submitCode(code);
                   return;
                 }

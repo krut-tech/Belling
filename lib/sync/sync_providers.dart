@@ -98,7 +98,18 @@ final connectivityStreamProvider = StreamProvider<List<ConnectivityResult>>((ref
   return Connectivity().onConnectivityChanged;
 });
 
+/// Emits on every sign-in / sign-out / token refresh so the UI that depends on
+/// "am I signed in" (sync chip, backup page) rebuilds instead of staying stale.
+final authStateChangesProvider = StreamProvider<AuthState>((ref) {
+  try {
+    return Supabase.instance.client.auth.onAuthStateChange;
+  } catch (_) {
+    return const Stream<AuthState>.empty();
+  }
+});
+
 final syncStatusProvider = Provider<SyncStatusState>((ref) {
+  ref.watch(authStateChangesProvider);
   final authService = ref.watch(authSyncServiceProvider);
   if (!authService.isSignedIn) {
     return const SyncStatusState(type: SyncStatusType.signInToSync);

@@ -330,7 +330,7 @@ class _ReportsPageState extends ConsumerState<ReportsPage> {
                               contentPadding: EdgeInsets.zero,
                               minVerticalPadding: 8,
                               title: Text(item.productName, style: const TextStyle(fontWeight: FontWeight.w600)),
-                              subtitle: Text('Reorder Level: ${item.reorderLevel}'),
+                              subtitle: Text('Reorder Level: ${formatMilliUnits(item.reorderLevel)}'),
                               trailing: Chip(
                                 backgroundColor: Colors.orange.shade100,
                                 label: Text(

@@ -64,7 +64,7 @@ class _NewBillPageState extends ConsumerState<NewBillPage> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: Text(l10n.itemNotFound),
-        content: Text(l10n.itemNotFoundAddPrompt),
+        content: Text('${l10n.itemNotFoundAddPrompt}\n\nBarcode: $barcode'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
@@ -364,48 +364,55 @@ class _NewBillPageState extends ConsumerState<NewBillPage> {
                           },
                           child: Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                            child: Row(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                // Item Info & Qty
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
+                                // Row 1: full-width name + line total
+                                Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Expanded(
+                                      child: Text(
                                         line.product.product.name,
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
                                         style: Theme.of(context).textTheme.titleMedium?.copyWith(
                                               fontWeight: FontWeight.w600,
                                             ),
                                       ),
-                                      const SizedBox(height: 4),
-                                      Row(
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Text(
+                                      formatRupees(lineTotal),
+                                      textAlign: TextAlign.right,
+                                      style: Theme.of(context).textTheme.titleMedium?.merge(tabularStyle).copyWith(
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 2),
+                                // Row 2: rate / discount on the left, controls on the right
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: Wrap(
+                                        spacing: 8,
                                         children: [
                                           Text(
                                             '${formatRupees(line.ratePaise)} / unit',
                                             style: Theme.of(context).textTheme.bodySmall,
                                           ),
-                                          if (line.discountPaise > 0) ...[
-                                            const SizedBox(width: 8),
+                                          if (line.discountPaise > 0)
                                             Text(
                                               'Disc: ${formatRupees(line.discountPaise)}',
-                                              style: TextStyle(
-                                                fontSize: 12,
-                                                color: Colors.green.shade700,
-                                              ),
+                                              style: TextStyle(fontSize: 12, color: Colors.green.shade700),
                                             ),
-                                          ],
                                         ],
                                       ),
-                                    ],
-                                  ),
-                                ),
-
-                                // Stepper & Discount Controls
-                                Row(
-                                  children: [
-                                    // Stepper -
+                                    ),
                                     IconButton(
-                                      constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+                                      constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
                                       tooltip: 'Quantity kam karo',
                                       icon: const Icon(Icons.remove_circle_outline),
                                       onPressed: () {
@@ -413,11 +420,11 @@ class _NewBillPageState extends ConsumerState<NewBillPage> {
                                         ref.read(newBillProvider.notifier).updateLineQty(index, newQty);
                                       },
                                     ),
-
-                                    // Qty text button (tap to edit decimal qty)
                                     InkWell(
                                       onTap: () => _showEditQtyDialog(index, line),
                                       child: Container(
+                                        constraints: const BoxConstraints(minWidth: 36),
+                                        alignment: Alignment.center,
                                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                                         decoration: BoxDecoration(
                                           border: Border.all(color: Colors.grey.shade400),
@@ -429,44 +436,24 @@ class _NewBillPageState extends ConsumerState<NewBillPage> {
                                         ),
                                       ),
                                     ),
-
-                                    // Stepper +
                                     IconButton(
-                                      constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+                                      constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
                                       tooltip: 'Quantity badhao',
                                       icon: const Icon(Icons.add_circle_outline),
                                       onPressed: () {
                                         ref.read(newBillProvider.notifier).updateLineQty(index, line.qtyMilli + 1000);
                                       },
                                     ),
+                                    IconButton(
+                                      constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
+                                      tooltip: 'Discount',
+                                      icon: Icon(
+                                        Icons.discount,
+                                        color: line.discountPaise > 0 ? Colors.green : Colors.grey,
+                                      ),
+                                      onPressed: () => _showEditDiscountDialog(index, line),
+                                    ),
                                   ],
-                                ),
-
-                                const SizedBox(width: 8),
-
-                                // Discount button
-                                IconButton(
-                                  constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
-                                  tooltip: 'Discount',
-                                  icon: Icon(
-                                    Icons.discount,
-                                    color: line.discountPaise > 0 ? Colors.green : Colors.grey,
-                                  ),
-                                  onPressed: () => _showEditDiscountDialog(index, line),
-                                ),
-
-                                const SizedBox(width: 8),
-
-                                // Line Total
-                                SizedBox(
-                                  width: 80,
-                                  child: Text(
-                                    formatRupees(lineTotal),
-                                    textAlign: TextAlign.right,
-                                    style: Theme.of(context).textTheme.titleMedium?.merge(tabularStyle).copyWith(
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                  ),
                                 ),
                               ],
                             ),
@@ -767,35 +754,31 @@ class _BottomTaxAndPaymentSectionState extends ConsumerState<_BottomTaxAndPaymen
                   Text('${l10n.paymentMethod}: ', style: Theme.of(context).textTheme.bodySmall),
                   const SizedBox(width: 8),
                   Expanded(
-                    child: SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: Row(
-                        children: [
+                    child: Wrap(
+                      spacing: 6,
+                      runSpacing: 4,
+                      children: [
                           _PaymentChip(
                             label: l10n.cash,
                             selected: billState.paymentMethod == 'cash',
                             onSelected: () => ref.read(newBillProvider.notifier).setPaymentMethod('cash'),
                           ),
-                          const SizedBox(width: 6),
                           _PaymentChip(
                             label: l10n.upi,
                             selected: billState.paymentMethod == 'upi',
                             onSelected: () => ref.read(newBillProvider.notifier).setPaymentMethod('upi'),
                           ),
-                          const SizedBox(width: 6),
                           _PaymentChip(
                             label: l10n.card,
                             selected: billState.paymentMethod == 'card',
                             onSelected: () => ref.read(newBillProvider.notifier).setPaymentMethod('card'),
                           ),
-                          const SizedBox(width: 6),
                           _PaymentChip(
                             label: l10n.credit,
                             selected: billState.paymentMethod == 'credit',
                             onSelected: () => ref.read(newBillProvider.notifier).setPaymentMethod('credit'),
                           ),
-                        ],
-                      ),
+                      ],
                     ),
                   ),
                 ],

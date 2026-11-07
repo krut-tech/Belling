@@ -110,6 +110,7 @@ class _ItemsPageState extends ConsumerState<ItemsPage> {
                               style: const TextStyle(fontWeight: FontWeight.bold),
                             ),
                           ),
+                          const SizedBox(width: 12),
                           Text(
                             formatRupees(p.pricePaise),
                             style: const TextStyle(

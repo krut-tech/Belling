@@ -109,7 +109,25 @@ class ProductRepository {
       ..limit(1);
 
     final row = await query.getSingleOrNull();
-    if (row == null) return null;
+    if (row == null) {
+      // Fallback: stored barcodes may carry spaces/hyphens or leading zeros
+      // (typed by hand), so compare in a normalised form.
+      String norm(String v) {
+        final t = v.trim().replaceAll(RegExp(r'[\s-]'), '');
+        return RegExp(r'^\d+$').hasMatch(t) ? t.replaceFirst(RegExp(r'^0+'), '') : t.toLowerCase();
+      }
+
+      final wanted = norm(cleanBarcode);
+      if (wanted.isEmpty) return null;
+      final all = await (db.select(db.products)
+            ..where((t) => t.businessId.equals(businessId) & t.barcode.isNotNull()))
+          .get();
+      for (final p in all) {
+        final stored = norm(p.barcode ?? '');
+        if (stored.isNotEmpty && stored == wanted) return getById(p.id);
+      }
+      return null;
+    }
 
     return ProductWithStock(
       product: row.readTable(db.products),
