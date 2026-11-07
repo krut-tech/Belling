@@ -121,6 +121,10 @@ void main() {
         stateCode: '24', // Gujarat ('24')
       );
 
+      // The bill decides IGST against the business's own state, so make the
+      // business Maharashtra ('27') before the bill screen reads it.
+      await (db.update(db.businesses)).write(const BusinessesCompanion(stateCode: Value('27')));
+
       final container = ProviderContainer(
         overrides: [
           databaseProvider.overrideWithValue(db),
@@ -129,6 +133,9 @@ void main() {
       addTearDown(container.dispose);
 
       final notifier = container.read(newBillProvider.notifier);
+      await container.read(activeBusinessProvider.future);
+      await Future<void>.delayed(Duration.zero);
+      expect(container.read(newBillProvider).businessStateCode, '27');
 
       // Walk-in -> Intra-state
       expect(container.read(newBillProvider).isInterState, isFalse);

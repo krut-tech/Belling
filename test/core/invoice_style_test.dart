@@ -148,7 +148,7 @@ void main() {
         snapshotJson: _snapshot(),
         lines: [_line()],
         style: const InvoiceStyle(),
-        assets: InvoiceAssets(logo: null, background: null),
+        assets: const InvoiceAssets(),
       );
       expect(_isPdf(bytes), isTrue);
     });

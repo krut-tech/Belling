@@ -237,17 +237,31 @@ class InvoiceStyle {
 
   /// Margins in PDF points. Thermal rolls get at most 3 mm so the narrow
   /// column is not eaten by A4-sized margins.
-  PdfEdgeInsets margins(PdfPageFormat format) {
+  InvoiceMargins margins(PdfPageFormat format) {
     const mm = PdfPageFormat.mm;
     final narrow = format.width / mm <= 100;
     double cap(double v) => narrow ? (v > 3 ? 3 : v) : v;
-    return PdfEdgeInsets(
-      cap(marginLeftMm) * mm,
-      cap(marginTopMm) * mm,
-      cap(marginRightMm) * mm,
-      cap(marginBottomMm) * mm,
+    return InvoiceMargins(
+      left: cap(marginLeftMm) * mm,
+      top: cap(marginTopMm) * mm,
+      right: cap(marginRightMm) * mm,
+      bottom: cap(marginBottomMm) * mm,
     );
   }
+}
+
+/// Page margins in PDF points.
+class InvoiceMargins {
+  final double left;
+  final double top;
+  final double right;
+  final double bottom;
+  const InvoiceMargins({
+    required this.left,
+    required this.top,
+    required this.right,
+    required this.bottom,
+  });
 }
 
 /// Images are read once per print and handed to the generator as bytes.

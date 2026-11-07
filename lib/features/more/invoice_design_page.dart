@@ -226,7 +226,7 @@ class _InvoiceDesignPageState extends ConsumerState<InvoiceDesignPage> {
                 const SizedBox(height: 16),
                 _section('Paper'),
                 DropdownButtonFormField<InvoicePaper>(
-                  value: _style.paper,
+                  initialValue: _style.paper,
                   isExpanded: true,
                   decoration: const InputDecoration(labelText: 'Paper size', border: OutlineInputBorder()),
                   items: [
@@ -252,7 +252,7 @@ class _InvoiceDesignPageState extends ConsumerState<InvoiceDesignPage> {
                 ],
                 const SizedBox(height: 12),
                 DropdownButtonFormField<InvoiceLayout>(
-                  value: _style.layout,
+                  initialValue: _style.layout,
                   isExpanded: true,
                   decoration: const InputDecoration(labelText: 'Layout', border: OutlineInputBorder()),
                   items: [
