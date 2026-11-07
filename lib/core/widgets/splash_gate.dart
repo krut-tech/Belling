@@ -2,7 +2,13 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
-const kSplashBg = Color(0xFF0B1B3F);
+/// Deep bahi-khata red. Must match android/app/src/main/res/values/colors.xml (splash_bg)
+/// so the native first screen and this splash look like one continuous screen.
+const kSplashBg = Color(0xFF5A0F12);
+
+const _gold = Color(0xFFF3D06E);
+const _cream = Color(0xFFF7EFD8);
+const _splashMs = 2400;
 
 /// Shows an animated (pure Flutter, no video) splash while [ready] completes,
 /// then cross-fades into [child]. The first frame is drawn immediately, so
@@ -19,7 +25,7 @@ class SplashGate extends StatefulWidget {
 
 class _SplashGateState extends State<SplashGate> with SingleTickerProviderStateMixin {
   late final AnimationController _c =
-      AnimationController(vsync: this, duration: const Duration(milliseconds: 1500))..forward();
+      AnimationController(vsync: this, duration: const Duration(milliseconds: _splashMs))..forward();
   bool _done = false;
 
   @override
@@ -28,7 +34,7 @@ class _SplashGateState extends State<SplashGate> with SingleTickerProviderStateM
     // Whatever happens during start-up, never get stuck on the splash.
     Future.wait<void>([
       widget.ready.catchError((Object _) {}),
-      Future<void>.delayed(const Duration(milliseconds: 1500)),
+      Future<void>.delayed(const Duration(milliseconds: _splashMs)),
     ]).timeout(const Duration(seconds: 8), onTimeout: () => const []).whenComplete(() {
       if (mounted) setState(() => _done = true);
     });
@@ -52,127 +58,222 @@ class _SplashGateState extends State<SplashGate> with SingleTickerProviderStateM
   }
 }
 
+/// Opens a red cloth bahi-khata, shows a rupee on the page, then
+/// "शुभ लाभ / શુભ લાભ" and the app name.
 class _SplashView extends StatelessWidget {
   const _SplashView({super.key, required this.animation});
   final Animation<double> animation;
 
+  static double _seg(double t, double from, double to, [Curve curve = Curves.easeOutCubic]) =>
+      curve.transform(((t - from) / (to - from)).clamp(0.0, 1.0));
+
   @override
   Widget build(BuildContext context) {
-    return ColoredBox(
-      color: kSplashBg,
-      child: Center(
-        child: AnimatedBuilder(
-          animation: animation,
-          builder: (context, _) {
-            final t = animation.value;
-            final logo = Curves.elasticOut.transform((t / 0.55).clamp(0.0, 1.0));
-            final text = Curves.easeOutCubic.transform(((t - 0.35) / 0.4).clamp(0.0, 1.0));
-            final tag = Curves.easeOutCubic.transform(((t - 0.55) / 0.35).clamp(0.0, 1.0));
-            return Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                SizedBox(
-                  width: 132,
-                  height: 132,
-                  child: CustomPaint(
-                    painter: _RingPainter(progress: t),
-                    child: Center(
-                      child: Transform.scale(
-                        scale: logo,
-                        child: Transform.rotate(
-                          angle: (1 - logo) * -math.pi / 4,
-                          child: Container(
-                            width: 76,
-                            height: 76,
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(22),
-                              gradient: const LinearGradient(
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                                colors: [Color(0xFF5B8CFF), Color(0xFF22D3EE)],
-                              ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: const Color(0xFF22D3EE).withValues(alpha: 0.35),
-                                  blurRadius: 24,
-                                  spreadRadius: 1,
-                                ),
-                              ],
-                            ),
-                            child: const Icon(Icons.receipt_long_rounded, color: Colors.white, size: 40),
-                          ),
-                        ),
-                      ),
+    return Semantics(
+      label: 'Belling',
+      child: DecoratedBox(
+        decoration: const BoxDecoration(
+          gradient: RadialGradient(
+            center: Alignment(0, -0.35),
+            radius: 1.0,
+            colors: [Color(0xFF8C1D1D), kSplashBg],
+          ),
+        ),
+        child: Center(
+          child: AnimatedBuilder(
+            animation: animation,
+            builder: (context, _) {
+              final t = animation.value;
+              final appear = _seg(t, 0.0, 0.15);
+              final open = _seg(t, 0.22, 0.55, Curves.easeInOutCubic);
+              final rupee = _seg(t, 0.5, 0.68, Curves.elasticOut);
+              final shubh = _seg(t, 0.55, 0.75);
+              final gujarati = _seg(t, 0.63, 0.82);
+              final name = _seg(t, 0.72, 0.9);
+              final tag = _seg(t, 0.82, 1.0);
+
+              Widget rise(double v, Widget child) => Opacity(
+                    opacity: v,
+                    child: Transform.translate(offset: Offset(0, (1 - v) * 14), child: child),
+                  );
+
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Opacity(
+                    opacity: appear,
+                    child: Transform.scale(
+                      scale: 0.9 + 0.1 * appear,
+                      child: _Ledger(open: open, rupee: rupee),
                     ),
                   ),
-                ),
-                const SizedBox(height: 28),
-                Opacity(
-                  opacity: text,
-                  child: Transform.translate(
-                    offset: Offset(0, (1 - text) * 14),
-                    child: const Text(
-                      'Universal Billing',
+                  const SizedBox(height: 26),
+                  rise(
+                    shubh,
+                    const Text(
+                      'शुभ लाभ',
                       style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 26,
+                        fontFamily: 'Noto Sans Devanagari',
+                        color: _gold,
+                        fontSize: 28,
                         fontWeight: FontWeight.w700,
-                        letterSpacing: 0.4,
+                        height: 1.1,
                         decoration: TextDecoration.none,
                       ),
                     ),
                   ),
-                ),
-                const SizedBox(height: 8),
-                Opacity(
-                  opacity: tag,
-                  child: const Text(
-                    'GST billing · POS · Inventory',
-                    style: TextStyle(
-                      color: Color(0xFF9FB3D9),
-                      fontSize: 13,
-                      letterSpacing: 0.6,
-                      decoration: TextDecoration.none,
+                  const SizedBox(height: 2),
+                  rise(
+                    gujarati,
+                    const Text(
+                      'શુભ લાભ',
+                      style: TextStyle(
+                        fontFamily: 'Noto Sans Gujarati',
+                        color: _gold,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                        decoration: TextDecoration.none,
+                      ),
                     ),
                   ),
-                ),
-              ],
-            );
-          },
+                  const SizedBox(height: 14),
+                  rise(
+                    name,
+                    const Text(
+                      'Belling',
+                      style: TextStyle(
+                        fontFamily: 'Inter',
+                        color: Colors.white,
+                        fontSize: 28,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: -0.3,
+                        decoration: TextDecoration.none,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  rise(
+                    tag,
+                    const Text(
+                      'आपका हिसाब, आपकी दुकान',
+                      style: TextStyle(
+                        fontFamily: 'Noto Sans Devanagari',
+                        color: Color(0xFFECC7C0),
+                        fontSize: 14,
+                        decoration: TextDecoration.none,
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
         ),
       ),
     );
   }
 }
 
-class _RingPainter extends CustomPainter {
-  _RingPainter({required this.progress});
-  final double progress;
+/// The ledger: cream pages with a rupee, and a red cover that swings open.
+class _Ledger extends StatelessWidget {
+  const _Ledger({required this.open, required this.rupee});
+  final double open; // 0 closed .. 1 open
+  final double rupee;
 
   @override
-  void paint(Canvas canvas, Size size) {
-    final c = size.center(Offset.zero);
-    final r = size.width / 2 - 4;
-    final base = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 3
-      ..color = Colors.white.withValues(alpha: 0.08);
-    canvas.drawCircle(c, r, base);
-    final arc = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round
-      ..strokeWidth = 3
-      ..shader = const SweepGradient(colors: [Color(0xFF5B8CFF), Color(0xFF22D3EE), Color(0xFF5B8CFF)])
-          .createShader(Rect.fromCircle(center: c, radius: r));
-    final sweep = 2 * math.pi * Curves.easeInOut.transform(progress.clamp(0.0, 1.0));
-    canvas.save();
-    canvas.translate(c.dx, c.dy);
-    canvas.rotate(progress * math.pi * 1.5 - math.pi / 2);
-    canvas.translate(-c.dx, -c.dy);
-    canvas.drawArc(Rect.fromCircle(center: c, radius: r), 0, sweep, false, arc);
-    canvas.restore();
+  Widget build(BuildContext context) {
+    final angle = -open * math.pi * 0.86;
+    // After the cover has swung past the viewer it would show its back; fade it out.
+    final coverOpacity = (1 - ((open - 0.55) / 0.35)).clamp(0.0, 1.0);
+
+    return SizedBox(
+      width: 150,
+      height: 190,
+      child: Stack(
+        children: [
+          // Pages
+          Positioned.fill(
+            left: 6,
+            top: 4,
+            right: 2,
+            bottom: 4,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: _cream,
+                borderRadius: const BorderRadius.horizontal(left: Radius.circular(2), right: Radius.circular(8)),
+                boxShadow: const [BoxShadow(color: Color(0x33000000), blurRadius: 18, offset: Offset(0, 10))],
+              ),
+              child: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Transform.scale(
+                      scale: rupee,
+                      child: const Text(
+                        '₹',
+                        style: TextStyle(
+                          fontFamily: 'Inter',
+                          color: Color(0xFFA31F23),
+                          fontSize: 44,
+                          fontWeight: FontWeight.w800,
+                          decoration: TextDecoration.none,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    for (var i = 0; i < 3; i++)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8),
+                        child: Container(width: 80, height: 2, color: const Color(0xB3C9B27A)),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          // Cover
+          Positioned.fill(
+            child: Opacity(
+              opacity: coverOpacity,
+              child: Transform(
+                alignment: Alignment.centerLeft,
+                transform: Matrix4.identity()
+                  ..setEntry(3, 2, 0.0014)
+                  ..rotateY(angle),
+                child: Container(
+                  decoration: BoxDecoration(
+                    borderRadius: const BorderRadius.horizontal(left: Radius.circular(6), right: Radius.circular(12)),
+                    gradient: const LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [Color(0xFFB32626), Color(0xFF8A1A1C), Color(0xFF7A1518)],
+                    ),
+                    boxShadow: const [BoxShadow(color: Color(0x73000000), blurRadius: 24, offset: Offset(0, 14))],
+                  ),
+                  child: Container(
+                    margin: const EdgeInsets.fromLTRB(16, 10, 10, 10),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: const Color(0xFFE8C25C), width: 2),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    alignment: Alignment.center,
+                    child: const Text(
+                      'श्री',
+                      style: TextStyle(
+                        fontFamily: 'Noto Sans Devanagari',
+                        color: _gold,
+                        fontSize: 32,
+                        fontWeight: FontWeight.w700,
+                        decoration: TextDecoration.none,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
-
-  @override
-  bool shouldRepaint(_RingPainter old) => old.progress != progress;
 }

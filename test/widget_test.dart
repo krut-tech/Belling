@@ -23,10 +23,10 @@ void main() {
     await tester.pump();
 
     // Splash is visible straight away (no black/blank frame)
-    expect(find.text('Universal Billing'), findsOneWidget);
+    expect(find.text('Belling'), findsOneWidget);
     expect(find.byType(NavigationBar), findsNothing);
 
-    await tester.pump(const Duration(milliseconds: 1600));
+    await tester.pump(const Duration(milliseconds: 2500));
     await tester.pump(const Duration(milliseconds: 600));
 
     expect(find.byType(NavigationBar), findsOneWidget);
