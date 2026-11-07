@@ -112,7 +112,7 @@ class AppTheme {
         side: const BorderSide(color: AppColors.lightBorder),
         selectedColor: AppColors.lightPrimary.withValues(alpha: 0.16),
         backgroundColor: AppColors.lightSurface,
-        labelStyle: const TextStyle(fontWeight: FontWeight.w600),
+        labelStyle: const TextStyle(fontWeight: FontWeight.w600, color: AppColors.lightText),
       ),
       segmentedButtonTheme: SegmentedButtonThemeData(
         style: SegmentedButton.styleFrom(
@@ -265,7 +265,7 @@ class AppTheme {
         side: const BorderSide(color: AppColors.darkBorder),
         selectedColor: AppColors.darkPrimary.withValues(alpha: 0.16),
         backgroundColor: AppColors.darkSurface,
-        labelStyle: const TextStyle(fontWeight: FontWeight.w600),
+        labelStyle: const TextStyle(fontWeight: FontWeight.w600, color: AppColors.darkText),
       ),
       segmentedButtonTheme: SegmentedButtonThemeData(
         style: SegmentedButton.styleFrom(

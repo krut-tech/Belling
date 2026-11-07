@@ -160,6 +160,15 @@ class PushWorker {
           msg.contains('forbidden')) {
         return false;
       }
+      // Server-side setup mistakes (missing column/function/table, no privilege on
+      // an internal object) heal once the server is fixed: keep the command pending.
+      // A genuine row-level-security denial is still a permanent rejection.
+      if (code == '42703' ||
+          code == '42883' ||
+          code == '42P01' ||
+          (code == '42501' && msg.contains('permission denied for') && !msg.contains('row-level security'))) {
+        return false;
+      }
       if (code.isNotEmpty) {
         return !_isTransientCode(code);
       }

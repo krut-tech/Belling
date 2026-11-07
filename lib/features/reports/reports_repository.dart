@@ -301,14 +301,16 @@ class ReportsRepository {
   Future<List<ReceivableData>> getTopReceivables({int limit = 10}) async {
     final query = db.customSelect(
       '''
-      SELECT 
-        p.id, p.name, p.phone,
-        COALESCE((SELECT SUM(d.total_paise) FROM documents d WHERE d.party_id = p.id AND d.doc_type = 'invoice'), 0) -
-        COALESCE((SELECT SUM(d.total_paise) FROM documents d WHERE d.party_id = p.id AND d.doc_type = 'credit_note'), 0) -
-        COALESCE((SELECT SUM(pay.amount_paise) FROM payments pay WHERE pay.party_id = p.id), 0) AS calculated_balance
-      FROM parties p
-      WHERE p.business_id = ?
-      HAVING calculated_balance > 0
+      SELECT id, name, phone, calculated_balance FROM (
+        SELECT
+          p.id AS id, p.name AS name, p.phone AS phone,
+          COALESCE((SELECT SUM(d.total_paise) FROM documents d WHERE d.party_id = p.id AND d.doc_type = 'invoice'), 0) -
+          COALESCE((SELECT SUM(d.total_paise) FROM documents d WHERE d.party_id = p.id AND d.doc_type = 'credit_note'), 0) -
+          COALESCE((SELECT SUM(pay.amount_paise) FROM payments pay WHERE pay.party_id = p.id), 0) AS calculated_balance
+        FROM parties p
+        WHERE p.business_id = ?
+      )
+      WHERE calculated_balance > 0
       ORDER BY calculated_balance DESC
       LIMIT ?
       ''',
@@ -338,10 +340,12 @@ class ReportsRepository {
 
     int sumDocs = 0;
     for (final d in docs) {
+      // Compare before round-off: the round-off is on the document, not on any line.
+      final beforeRoundOff = d.totalPaise - d.roundOffPaise;
       if (d.docType == 'invoice') {
-        sumDocs += d.totalPaise;
+        sumDocs += beforeRoundOff;
       } else if (d.docType == 'credit_note') {
-        sumDocs -= d.totalPaise;
+        sumDocs -= beforeRoundOff;
       }
     }
 

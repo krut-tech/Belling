@@ -249,8 +249,11 @@ class _ReportsPageState extends ConsumerState<ReportsPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    Wrap(
+                      alignment: WrapAlignment.spaceBetween,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      spacing: 8,
+                      runSpacing: 8,
                       children: [
                         Text(
                           _showTopItemsByAmount ? l10n.top10ItemsByAmount : l10n.top10ItemsByQty,
@@ -259,6 +262,7 @@ class _ReportsPageState extends ConsumerState<ReportsPage> {
                         SizedBox(
                           height: 48,
                           child: SegmentedButton<bool>(
+                            showSelectedIcon: false,
                             segments: const [
                               ButtonSegment(value: true, label: Text('Amount')),
                               ButtonSegment(value: false, label: Text('Qty')),
