@@ -120,7 +120,9 @@ class SyncChip extends ConsumerWidget {
                 // server-side fix) and push again.
                 final db = ref.read(databaseProvider);
                 final ids = rejectedCommands.map<String>((c) => c.id as String).toList();
-                await (db.update(db.outboxCommands)..where((t) => t.id.isIn(ids) & t.status.equals('rejected')))
+                await (db.update(db.outboxCommands)
+                      ..where((t) => t.id.isIn(ids))
+                      ..where((t) => t.status.equals('rejected')))
                     .write(const OutboxCommandsCompanion(status: Value('pending'), lastError: Value(null)));
                 try {
                   ref.read(pushWorkerProvider).triggerPush();
