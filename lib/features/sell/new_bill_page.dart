@@ -289,7 +289,11 @@ class _NewBillPageState extends ConsumerState<NewBillPage> {
                                 ),
                           ),
                           Text(
-                            billState.isInterState ? l10n.interState : l10n.intraState,
+                            billState.isInterState
+                                ? 'Dusre state ka grahak · IGST lagega'
+                                : (billState.party == null
+                                    ? 'Bina party (cash) · CGST + SGST'
+                                    : 'Same state · CGST + SGST'),
                             style: Theme.of(context).textTheme.bodySmall?.copyWith(
                                   color: billState.isInterState ? Colors.orange.shade800 : Colors.grey.shade700,
                                 ),
@@ -318,11 +322,25 @@ class _NewBillPageState extends ConsumerState<NewBillPage> {
             // Cart Items List
             Expanded(
               child: billState.lines.isEmpty
-                  ? Center(
-                      child: Text(
-                        l10n.cartEmpty,
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Colors.grey),
-                      ),
+                  ? Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+                          child: Text(
+                            'Item par tap karke bill mein jodo',
+                            style: Theme.of(context).textTheme.labelLarge?.copyWith(color: Colors.grey.shade700),
+                          ),
+                        ),
+                        Expanded(
+                          child: _SearchResultsList(
+                            searchQuery: '',
+                            onProductSelected: (product) {
+                              ref.read(newBillProvider.notifier).addProduct(product);
+                            },
+                          ),
+                        ),
+                      ],
                     )
                   : ListView.separated(
                       padding: const EdgeInsets.symmetric(vertical: 8),
@@ -483,7 +501,17 @@ class _SearchResultsList extends ConsumerWidget {
     return productsAsync.when(
       data: (products) {
         if (products.isEmpty) {
-          return const Center(child: Text('No matching items found'));
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Text(
+                searchQuery.trim().isEmpty
+                    ? 'Abhi koi item nahi hai. Items tab mein item add karo.'
+                    : 'No matching items found',
+                textAlign: TextAlign.center,
+              ),
+            ),
+          );
         }
         return ListView.separated(
           itemCount: products.length,

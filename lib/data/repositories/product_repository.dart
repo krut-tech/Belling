@@ -213,6 +213,36 @@ class ProductRepository {
     });
   }
 
+  /// Adds (qtyMilli > 0) or removes (qtyMilli < 0) stock by appending a movement.
+  /// Stock is never edited in place: it is the sum of its movements.
+  Future<void> adjustStock({
+    required String productId,
+    required int qtyMilli,
+    required String reason, // 'purchase' | 'adjustment'
+  }) async {
+    if (qtyMilli == 0) throw ArgumentError('Quantity cannot be zero');
+    await db.transaction(() async {
+      final movementId = const Uuid().v4();
+      await db.into(db.stockMovements).insert(
+            StockMovementsCompanion.insert(
+              id: movementId,
+              businessId: businessId,
+              productId: productId,
+              qtyMilli: qtyMilli,
+              reason: reason,
+              documentId: const Value.absent(),
+              createdAt: DateTime.now(),
+            ),
+          );
+      await db.enqueueOutboxCommand(
+        businessId: businessId,
+        deviceId: deviceId,
+        commandType: 'push_stock_movement',
+        payload: {'stock_movement_id': movementId},
+      );
+    });
+  }
+
   /// Archives / deletes a product.
   Future<void> archive(String productId) async {
     await (db.delete(db.products)..where((tbl) => tbl.id.equals(productId))).go();

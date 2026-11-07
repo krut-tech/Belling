@@ -150,6 +150,7 @@ class _PartyFormDialogState extends ConsumerState<PartyFormDialog> {
                 ),
                 const SizedBox(height: 16),
                 DropdownButtonFormField<String>(
+                  isExpanded: true,
                   initialValue: _stateCode,
                   decoration: InputDecoration(
                     labelText: l10n.state,
@@ -158,7 +159,7 @@ class _PartyFormDialogState extends ConsumerState<PartyFormDialog> {
                   items: kGstStates.map((s) {
                     return DropdownMenuItem<String>(
                       value: s.code,
-                      child: Text('${s.name} (${s.code})'),
+                      child: Text('${s.name} (${s.code})', overflow: TextOverflow.ellipsis),
                     );
                   }).toList(),
                   onChanged: (val) {

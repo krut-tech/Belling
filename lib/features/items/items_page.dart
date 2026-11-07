@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/widgets/motion.dart';
+import 'stock_adjust_dialog.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/money.dart';
@@ -94,6 +95,13 @@ class _ItemsPageState extends ConsumerState<ItemsPage> {
 
                     return FadeSlideIn(index: index, child: ListTile(
                       minVerticalPadding: 12, // Ensure touch height >= 48px
+                      trailing: p.trackStock
+                          ? IconButton(
+                              tooltip: 'Stock add karo',
+                              icon: const Icon(Icons.add_box_outlined),
+                              onPressed: () => showStockAdjustDialog(context, ref, item),
+                            )
+                          : null,
                       title: Row(
                         children: [
                           Expanded(
