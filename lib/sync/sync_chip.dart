@@ -1,7 +1,10 @@
+import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../data/database.dart';
+import '../data/providers.dart';
 import 'sync_providers.dart';
 
 class SyncChip extends ConsumerWidget {
@@ -47,7 +50,7 @@ class SyncChip extends ConsumerWidget {
       borderRadius: BorderRadius.circular(16),
       onTap: () {
         if (status.type == SyncStatusType.error) {
-          _showRejectedCommandsDialog(context, status.rejectedCommands);
+          _showRejectedCommandsDialog(context, ref, status.rejectedCommands);
         } else if (status.type == SyncStatusType.signInToSync) {
           context.push('/more/backup-sync');
         } else {
@@ -82,7 +85,7 @@ class SyncChip extends ConsumerWidget {
     );
   }
 
-  void _showRejectedCommandsDialog(BuildContext context, List rejectedCommands) {
+  void _showRejectedCommandsDialog(BuildContext context, WidgetRef ref, List rejectedCommands) {
     showDialog(
       context: context,
       builder: (context) {
@@ -111,6 +114,21 @@ class SyncChip extends ConsumerWidget {
             ),
           ),
           actions: [
+            TextButton(
+              onPressed: () async {
+                // Put the rejected commands back in the queue (e.g. after a
+                // server-side fix) and push again.
+                final db = ref.read(databaseProvider);
+                final ids = rejectedCommands.map<String>((c) => c.id as String).toList();
+                await (db.update(db.outboxCommands)..where((t) => t.id.isIn(ids) & t.status.equals('rejected')))
+                    .write(const OutboxCommandsCompanion(status: Value('pending'), lastError: Value(null)));
+                try {
+                  ref.read(pushWorkerProvider).triggerPush();
+                } catch (_) {}
+                if (context.mounted) Navigator.pop(context);
+              },
+              child: const Text('Retry'),
+            ),
             TextButton(
               onPressed: () => Navigator.pop(context),
               child: const Text('Close'),
