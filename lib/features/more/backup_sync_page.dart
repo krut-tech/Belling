@@ -74,7 +74,9 @@ class _BackupAndSyncPageState extends ConsumerState<BackupAndSyncPage> {
       try {
         ref.read(pushWorkerProvider).triggerPush();
         ref.read(pullWorkerProvider).pullSoon();
-      } catch (_) {}
+      } catch (e) {
+        debugPrint('Sync trigger failed: $e');
+      }
     }
   }
 
@@ -268,7 +270,9 @@ class _BackupAndSyncPageState extends ConsumerState<BackupAndSyncPage> {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     const SnackBar(content: Text('Sync triggered')),
                                   );
-                                } catch (_) {}
+                                } catch (e) {
+        debugPrint('Sync trigger failed: $e');
+      }
                               },
                               icon: const Icon(Icons.sync),
                               label: const Text('Sync Now'),

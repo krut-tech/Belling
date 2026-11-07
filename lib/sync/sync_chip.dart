@@ -56,7 +56,9 @@ class SyncChip extends ConsumerWidget {
         } else {
           try {
             ref.read(pushWorkerProvider).triggerPush();
-          } catch (_) {}
+          } catch (e) {
+            debugPrint('Sync trigger failed: $e');
+          }
         }
       },
       child: Container(
@@ -126,7 +128,9 @@ class SyncChip extends ConsumerWidget {
                     .write(const OutboxCommandsCompanion(status: Value('pending'), lastError: Value(null)));
                 try {
                   ref.read(pushWorkerProvider).triggerPush();
-                } catch (_) {}
+                } catch (e) {
+            debugPrint('Sync trigger failed: $e');
+          }
                 if (context.mounted) Navigator.pop(context);
               },
               child: const Text('Retry'),

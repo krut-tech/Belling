@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:sqlite3/sqlite3.dart';
@@ -46,6 +47,15 @@ class BackupRestoreService {
 
     // 3. Copy to .ubbackup file in temp directory
     final tempDir = await getTemporaryDirectory();
+    // Remove older temp backups (plain SQLite with all business data). The
+    // new one is kept until the next backup so the share target can read it.
+    try {
+      await for (final f in tempDir.list()) {
+        if (f is File && f.path.contains('belling_backup_')) await f.delete();
+      }
+    } catch (e) {
+      debugPrint('Could not clean old temp backups: $e');
+    }
     final timestamp = DateTime.now().millisecondsSinceEpoch;
     final backupPath = '${tempDir.path}/belling_backup_$timestamp.ubbackup';
     final backupFile = await dbFile.copy(backupPath);
@@ -77,8 +87,9 @@ class BackupRestoreService {
         throw Exception('PRAGMA user_version missing');
       }
       final userVersion = versionRes.first.values.first as int;
-      if (userVersion <= 0 || userVersion > 10) {
-        throw Exception('Invalid user_version schema: $userVersion');
+      if (userVersion <= 0 || userVersion > kSchemaVersion) {
+        throw Exception(
+            'Backup schema version $userVersion is not supported by this app (max $kSchemaVersion). Update the app first.');
       }
 
       // 3. Check required tables exist & count records
@@ -103,7 +114,9 @@ class BackupRestoreService {
     // 2. Checkpoint WAL
     try {
       await db.customStatement('PRAGMA wal_checkpoint(FULL);');
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('WAL checkpoint before restore failed: $e');
+    }
 
     // 3. Close database connection
     await db.close();

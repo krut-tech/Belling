@@ -225,6 +225,9 @@ class AppSettingsTable extends Table {
   Set<Column> get primaryKey => {key};
 }
 
+/// Current local schema version (also the highest backup version we can restore).
+const int kSchemaVersion = 4;
+
 class IssueDocumentLineParam {
   final String productId;
   final String name;
@@ -325,7 +328,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? e]) : super(e ?? _openConnection());
 
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => kSchemaVersion;
 
   Future<void> enqueueOutboxCommand({
     required String businessId,
@@ -454,6 +457,17 @@ class AppDatabase extends _$AppDatabase {
     ''');
   }
 
+  /// Adds a column during migration. Only "duplicate column" (already added by
+  /// an earlier partial run) is ignored; any other failure aborts the upgrade
+  /// so a half-migrated schema is never opened silently.
+  Future<void> _safeAddColumn(Migrator m, TableInfo table, GeneratedColumn column) async {
+    try {
+      await m.addColumn(table, column);
+    } catch (e) {
+      if (!e.toString().toLowerCase().contains('duplicate column')) rethrow;
+    }
+  }
+
   @override
   MigrationStrategy get migration {
     return MigrationStrategy(
@@ -465,64 +479,36 @@ class AppDatabase extends _$AppDatabase {
         if (from < 2) {
           await customStatement('DROP TRIGGER IF EXISTS prevent_issued_doc_update;');
           await createTriggers();
-          try {
-            await m.addColumn(businesses, businesses.upiId);
-          } catch (_) {}
-          try {
-            await m.addColumn(businesses, businesses.invoiceTerms);
-          } catch (_) {}
+          await _safeAddColumn(m, businesses, businesses.upiId);
+          await _safeAddColumn(m, businesses, businesses.invoiceTerms);
         }
         if (from < 3) {
-          try {
-            await m.addColumn(payments, payments.note);
-          } catch (_) {}
+          await _safeAddColumn(m, payments, payments.note);
         }
         if (from < 4) {
-          try {
-            await m.addColumn(businesses, businesses.updatedAt);
-          } catch (_) {}
-          try {
-            await m.addColumn(businesses, businesses.serverSeq);
-          } catch (_) {}
-          try {
-            await m.addColumn(devices, devices.updatedAt);
-          } catch (_) {}
-          try {
-            await m.addColumn(devices, devices.serverSeq);
-          } catch (_) {}
-          try {
-            await m.addColumn(parties, parties.updatedAt);
-          } catch (_) {}
-          try {
-            await m.addColumn(parties, parties.archivedAt);
-          } catch (_) {}
-          try {
-            await m.addColumn(parties, parties.serverSeq);
-          } catch (_) {}
-          try {
-            await m.addColumn(products, products.updatedAt);
-          } catch (_) {}
-          try {
-            await m.addColumn(products, products.serverSeq);
-          } catch (_) {}
-          try {
-            await m.addColumn(documents, documents.serverSeq);
-          } catch (_) {}
-          try {
-            await m.addColumn(documentLines, documentLines.serverSeq);
-          } catch (_) {}
-          try {
-            await m.addColumn(payments, payments.serverSeq);
-          } catch (_) {}
-          try {
-            await m.addColumn(stockMovements, stockMovements.serverSeq);
-          } catch (_) {}
+          await _safeAddColumn(m, businesses, businesses.updatedAt);
+          await _safeAddColumn(m, businesses, businesses.serverSeq);
+          await _safeAddColumn(m, devices, devices.updatedAt);
+          await _safeAddColumn(m, devices, devices.serverSeq);
+          await _safeAddColumn(m, parties, parties.updatedAt);
+          await _safeAddColumn(m, parties, parties.archivedAt);
+          await _safeAddColumn(m, parties, parties.serverSeq);
+          await _safeAddColumn(m, products, products.updatedAt);
+          await _safeAddColumn(m, products, products.serverSeq);
+          await _safeAddColumn(m, documents, documents.serverSeq);
+          await _safeAddColumn(m, documentLines, documentLines.serverSeq);
+          await _safeAddColumn(m, payments, payments.serverSeq);
+          await _safeAddColumn(m, stockMovements, stockMovements.serverSeq);
           try {
             await m.createTable(syncStateTable);
-          } catch (_) {}
+          } catch (e) {
+            if (!e.toString().toLowerCase().contains('already exists')) rethrow;
+          }
           try {
             await m.createTable(appSettingsTable);
-          } catch (_) {}
+          } catch (e) {
+            if (!e.toString().toLowerCase().contains('already exists')) rethrow;
+          }
         }
       },
       beforeOpen: (details) async {
@@ -626,9 +612,29 @@ class AppDatabase extends _$AppDatabase {
     DateTime? issuedAt,
     Map<String, dynamic>? customSnapshot,
   }) async {
+    if (lines.isEmpty) {
+      throw ArgumentError('A document needs at least one line');
+    }
     for (final line in lines) {
       if (line.qtyMilli <= 0 || line.ratePaise < 0) {
         throw ArgumentError('qtyMilli must be positive and ratePaise must be non-negative');
+      }
+      if (line.discountPaise < 0) {
+        throw ArgumentError('Discount cannot be negative');
+      }
+      final gross = divideRoundHalfUp(line.qtyMilli * line.ratePaise, 1000);
+      if (line.discountPaise > gross) {
+        throw ArgumentError('Discount cannot be more than the line amount');
+      }
+      if (line.gstRateBp < 0) {
+        throw ArgumentError('GST rate cannot be negative');
+      }
+    }
+    if (payments != null) {
+      for (final p in payments) {
+        if (p.amountPaise < 0) {
+          throw ArgumentError('Payment amount cannot be negative');
+        }
       }
     }
 
@@ -890,6 +896,14 @@ class AppDatabase extends _$AppDatabase {
       // Mirror the original invoice: IGST on the invoice means inter-state.
       final isInterState = origDoc.igstPaise != 0;
 
+      // document_lines does not store whether the rate included tax. If the
+      // stored taxable amount differs from gross - discount, the line was
+      // tax-inclusive, so mirror that to reproduce the same totals.
+      bool wasInclusive(DocumentLine l) {
+        final gross = divideRoundHalfUp(l.qtyMilli * l.ratePaise, 1000);
+        return (gross - l.discountPaise) != l.taxablePaise;
+      }
+
       final creditNoteLines = origLines
           .map((l) => IssueDocumentLineParam(
                 productId: l.productId,
@@ -899,7 +913,7 @@ class AppDatabase extends _$AppDatabase {
                 ratePaise: l.ratePaise,
                 discountPaise: l.discountPaise,
                 gstRateBp: l.gstRateBp,
-                priceIncludesTax: false,
+                priceIncludesTax: wasInclusive(l),
               ))
           .toList();
 

@@ -97,7 +97,10 @@ class AuthSyncService {
   }
 
   Future<int> _getPendingCount() async {
-    final rows = await (db.select(db.outboxCommands)..where((t) => t.status.equals('pending'))).get();
+    // Rejected commands are also unsynced data: signing out must warn about them.
+    final rows = await (db.select(db.outboxCommands)
+          ..where((t) => t.status.equals('pending') | t.status.equals('rejected')))
+        .get();
     return rows.length;
   }
 
@@ -131,8 +134,18 @@ class AuthSyncService {
         final serverBusId = serverBus['id'] as String;
 
         if (serverBusId != localBus.id) {
+          // Adopting wipes local data, so refuse if anything local would be lost:
+          // issued documents, or any command that has not reached the server.
           final issuedDocs = await (db.select(db.documents)..where((t) => t.status.equals('issued'))).get();
-          final canAdopt = issuedDocs.isEmpty;
+          final unsynced = await (db.select(db.outboxCommands)
+                ..where((t) => t.status.equals('pending') | t.status.equals('rejected')))
+              .get();
+          final hasLocalProducts = (await (db.select(db.products)..limit(1)).get()).isNotEmpty;
+          final hasLocalParties = (await (db.select(db.parties)..limit(1)).get()).isNotEmpty;
+          final canAdopt = issuedDocs.isEmpty &&
+              unsynced.isEmpty &&
+              !hasLocalProducts &&
+              !hasLocalParties;
           return ExistingBusinessChoice(serverBusiness: serverBus, canAdopt: canAdopt);
         }
       }
@@ -229,7 +242,11 @@ class AuthSyncService {
             takenPrefixes.add(r['series_prefix'] as String);
           }
         }
-      } catch (_) {}
+      } catch (e) {
+        // Do not guess a prefix without knowing which ones other devices use:
+        // two devices with the same prefix would issue duplicate numbers.
+        throw StateError('Could not read device list from the server: $e');
+      }
     }
 
     String nextPrefix = 'A';

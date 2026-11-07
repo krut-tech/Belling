@@ -44,7 +44,9 @@ class _PartyFormDialogState extends ConsumerState<PartyFormDialog> {
         ? formatPaiseToRupeesInput(p.creditLimitPaise, forceDecimals: false)
         : '';
     _creditLimitController = TextEditingController(text: limitRupees);
-    _stateCode = p?.stateCode ?? '27'; // Default Maharashtra
+    // New parties default to the business's own state (intra-state billing).
+    final ownState = ref.read(activeBusinessProvider).valueOrNull?.stateCode;
+    _stateCode = p?.stateCode ?? ((ownState != null && ownState.isNotEmpty) ? ownState : '24');
   }
 
   @override

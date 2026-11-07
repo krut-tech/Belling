@@ -67,6 +67,27 @@ class ProductRepository {
     return v.toList();
   }
 
+  /// Gets one product (with current stock) by id for the current business.
+  Future<ProductWithStock?> getById(String id) async {
+    final stockQtyExp = db.stockMovements.qtyMilli.sum();
+    final query = db.select(db.products).join([
+      leftOuterJoin(
+        db.stockMovements,
+        db.stockMovements.productId.equalsExp(db.products.id),
+      ),
+    ])
+      ..where(db.products.businessId.equals(businessId) & db.products.id.equals(id))
+      ..groupBy([db.products.id])
+      ..addColumns([stockQtyExp])
+      ..limit(1);
+    final row = await query.getSingleOrNull();
+    if (row == null) return null;
+    return ProductWithStock(
+      product: row.readTable(db.products),
+      stockMilli: row.read(stockQtyExp) ?? 0,
+    );
+  }
+
   /// Gets a single product by barcode for the current business.
   Future<ProductWithStock?> getByBarcode(String barcode) async {
     final cleanBarcode = barcode.trim();

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/tax.dart';
@@ -97,7 +98,7 @@ class NewBillState {
   NewBillState({
     this.lines = const [],
     this.party,
-    this.businessStateCode = '27',
+    this.businessStateCode = '',
     this.paymentMethod = 'cash',
     this.customPaidAmountPaise,
     this.isSaving = false,
@@ -105,7 +106,14 @@ class NewBillState {
     this.isLoaded = false,
   });
 
-  bool get isInterState => party != null && party!.stateCode != businessStateCode;
+  /// Walk-in customers (no party) and parties without a state are billed as
+  /// intra-state. Otherwise IGST applies only when the party's state differs
+  /// from the business's own state.
+  bool get isInterState =>
+      party != null &&
+      party!.stateCode.isNotEmpty &&
+      businessStateCode.isNotEmpty &&
+      party!.stateCode != businessStateCode;
 
   TaxCalculationResult get taxResult {
     return calculateTax(
@@ -190,10 +198,29 @@ class NewBillNotifier extends StateNotifier<NewBillState> {
       final draft = await docRepo.getDraftCart();
       if (draft != null && draft.cartJson.isNotEmpty) {
         final Map<String, dynamic> map = jsonDecode(draft.cartJson);
-        final linesList = (map['lines'] as List<dynamic>?)
+        final savedLines = (map['lines'] as List<dynamic>?)
                 ?.map((l) => CartLine.fromJson(l as Map<String, dynamic>))
                 .toList() ??
             [];
+
+        // Refresh each line from the live product: price, GST and stock may
+        // have changed, and a deleted/archived product must not reach issue.
+        final productRepo = ref.read(productRepositoryProvider);
+        final linesList = <CartLine>[];
+        for (final saved in savedLines) {
+          final fresh = await productRepo.getById(saved.product.product.id);
+          if (fresh == null) continue;
+          var discount = saved.discountPaise;
+          final gross = divideRoundHalfUp(saved.qtyMilli * fresh.product.pricePaise, 1000);
+          if (discount > gross) discount = gross;
+          linesList.add(CartLine(
+            product: fresh,
+            qtyMilli: saved.qtyMilli,
+            ratePaise: fresh.product.pricePaise,
+            discountPaise: discount,
+            gstRateBp: fresh.product.gstRateBp,
+          ));
+        }
 
         Party? loadedParty;
         final partyId = draft.partyId ?? (map['partyId'] as String?);
@@ -214,7 +241,9 @@ class NewBillNotifier extends StateNotifier<NewBillState> {
         );
         return;
       }
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('Draft cart could not be restored: $e');
+    }
 
     if (!mounted) return;
     state = state.copyWith(isLoaded: true);
@@ -264,13 +293,25 @@ class NewBillNotifier extends StateNotifier<NewBillState> {
       return;
     }
     final newLines = List<CartLine>.from(state.lines);
-    newLines[index] = newLines[index].copyWith(qtyMilli: qtyMilli);
+    var updated = newLines[index].copyWith(qtyMilli: qtyMilli);
+    if (updated.discountPaise > updated.grossPaise) {
+      updated = updated.copyWith(discountPaise: updated.grossPaise);
+    }
+    newLines[index] = updated;
     state = state.copyWith(lines: newLines, clearError: true);
     _persistDraft();
   }
 
   void updateLineDiscount(int index, int discountPaise) {
     if (index < 0 || index >= state.lines.length) return;
+    if (discountPaise < 0) {
+      state = state.copyWith(error: 'Discount cannot be negative');
+      return;
+    }
+    if (discountPaise > state.lines[index].grossPaise) {
+      state = state.copyWith(error: 'Discount cannot be more than the item amount');
+      return;
+    }
     final newLines = List<CartLine>.from(state.lines);
     newLines[index] = newLines[index].copyWith(discountPaise: discountPaise);
     state = state.copyWith(lines: newLines, clearError: true);
@@ -304,6 +345,10 @@ class NewBillNotifier extends StateNotifier<NewBillState> {
   }
 
   void setPaidAmountPaise(int? amountPaise) {
+    if (amountPaise != null && amountPaise < 0) {
+      state = state.copyWith(error: 'Paid amount cannot be negative');
+      return;
+    }
     state = state.copyWith(
       customPaidAmountPaise: amountPaise,
       clearError: true,
@@ -311,10 +356,15 @@ class NewBillNotifier extends StateNotifier<NewBillState> {
     _persistDraft();
   }
 
+  void setBusinessStateCode(String code) {
+    if (code == state.businessStateCode) return;
+    state = state.copyWith(businessStateCode: code);
+  }
+
   Future<void> clearCart() async {
     final docRepo = ref.read(documentRepositoryProvider);
     await docRepo.clearDraftCart();
-    state = NewBillState(isLoaded: true);
+    state = NewBillState(isLoaded: true, businessStateCode: state.businessStateCode);
   }
 
   Future<Document?> issueInvoice() async {
@@ -329,6 +379,21 @@ class NewBillNotifier extends StateNotifier<NewBillState> {
     final totalPaise = state.grandTotalPaise;
     final paidPaise = state.paidAmountPaise;
     final unpaidBalance = totalPaise - paidPaise;
+
+    if (paidPaise < 0) {
+      state = state.copyWith(error: 'Paid amount cannot be negative');
+      return null;
+    }
+    if (paidPaise > totalPaise) {
+      state = state.copyWith(error: 'Paid amount cannot be more than the bill total');
+      return null;
+    }
+    for (final l in state.lines) {
+      if (l.qtyMilli <= 0 || l.discountPaise < 0 || l.discountPaise > l.grossPaise) {
+        state = state.copyWith(error: 'Check quantity and discount of ${l.product.product.name}');
+        return null;
+      }
+    }
 
     // Credit validation: party required if paymentMethod is 'credit' or unpaidBalance > 0
     if ((state.paymentMethod == 'credit' || unpaidBalance > 0) && state.party == null) {
@@ -370,7 +435,7 @@ class NewBillNotifier extends StateNotifier<NewBillState> {
 
       await docRepo.clearDraftCart();
 
-      state = NewBillState(isLoaded: true);
+      state = NewBillState(isLoaded: true, businessStateCode: state.businessStateCode);
 
       return issuedDoc;
     } catch (e) {
@@ -392,5 +457,12 @@ class NewBillNotifier extends StateNotifier<NewBillState> {
 }
 
 final newBillProvider = StateNotifierProvider<NewBillNotifier, NewBillState>((ref) {
-  return NewBillNotifier(ref);
+  final notifier = NewBillNotifier(ref);
+  // Keep the seller's own state code in sync with the business settings, so
+  // CGST+SGST vs IGST is decided against the real business state.
+  ref.listen<AsyncValue<Business?>>(activeBusinessProvider, (_, next) {
+    final code = next.valueOrNull?.stateCode;
+    if (code != null && code.isNotEmpty) notifier.setBusinessStateCode(code);
+  }, fireImmediately: true);
+  return notifier;
 });
