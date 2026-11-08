@@ -7,6 +7,7 @@ import '../data/database.dart';
 import '../data/providers.dart';
 import 'auth_sync_service.dart';
 import 'pull_service.dart';
+import 'profile_sync_service.dart';
 import 'push_worker.dart';
 import 'supabase_sync_remote.dart';
 import 'sync_remote.dart';
@@ -22,6 +23,11 @@ final syncRemoteProvider = Provider<SyncRemote>((ref) {
 final authSyncServiceProvider = Provider<AuthSyncService>((ref) {
   final db = ref.watch(databaseProvider);
   return AuthSyncService(db: db);
+});
+
+final profileSyncServiceProvider = Provider<ProfileSyncService>((ref) {
+  final db = ref.watch(databaseProvider);
+  return ProfileSyncService(db: db);
 });
 
 final pushWorkerProvider = Provider<PushWorker>((ref) {

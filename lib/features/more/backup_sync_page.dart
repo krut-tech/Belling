@@ -3,6 +3,7 @@ import '../../core/widgets/motion.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../sync/auth_sync_service.dart';
+import '../../sync/profile_sync_service.dart';
 import '../../sync/sync_chip.dart';
 import '../../sync/sync_providers.dart';
 
@@ -70,6 +71,13 @@ class _BackupAndSyncPageState extends ConsumerState<BackupAndSyncPage> {
     if (mounted && choice != null) {
       await _showExistingBusinessDialog(choice);
     }
+    // Bring back (or save) the shop details kept in this account.
+    final profileResult = await ref.read(profileSyncServiceProvider).syncOnSignIn();
+    if (mounted && profileResult == ProfileSyncResult.restored) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Aapki shop ki details account se aa gayi (name, GST, UPI...)')),
+      );
+    }
     if (mounted) {
       try {
         ref.read(pushWorkerProvider).triggerPush();
@@ -119,6 +127,45 @@ class _BackupAndSyncPageState extends ConsumerState<BackupAndSyncPage> {
               onPressed: () => Navigator.pop(ctx),
               child: const Text('Cancel'),
             ),
+            if (!choice.canAdopt)
+              TextButton(
+                style: TextButton.styleFrom(foregroundColor: Colors.red),
+                onPressed: () async {
+                  final nav = Navigator.of(ctx);
+                  final messenger = ScaffoldMessenger.of(ctx);
+                  final sure = await showDialog<bool>(
+                    context: ctx,
+                    builder: (c2) => AlertDialog(
+                      title: const Text('Is phone ka data hataye?'),
+                      content: const Text(
+                        'Is phone ke local bills, items aur parties delete ho jayenge aur aapke account ka business use hoga. '
+                        'Ye wapas nahi hoga. Pehle More mein Backup le lo.',
+                      ),
+                      actions: [
+                        TextButton(onPressed: () => Navigator.pop(c2, false), child: const Text('Nahi')),
+                        TextButton(
+                          style: TextButton.styleFrom(foregroundColor: Colors.red),
+                          onPressed: () => Navigator.pop(c2, true),
+                          child: const Text('Haan, hatao'),
+                        ),
+                      ],
+                    ),
+                  );
+                  if (sure != true) return;
+                  nav.pop();
+                  try {
+                    await authService.adoptServerBusiness(choice.serverBusiness);
+                    messenger.showSnackBar(
+                      SnackBar(content: Text('Account ka business "$busName" use ho raha hai')),
+                    );
+                  } catch (e) {
+                    messenger.showSnackBar(
+                      SnackBar(content: Text('Switch nahi hua: $e')),
+                    );
+                  }
+                },
+                child: const Text('Local data hatao'),
+              ),
             if (choice.canAdopt)
               ElevatedButton(
                 onPressed: () async {

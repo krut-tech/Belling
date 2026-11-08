@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import '../../core/widgets/motion.dart';
@@ -8,6 +10,7 @@ import '../../core/gst_states.dart';
 import '../../core/providers/locale_provider.dart';
 import '../../data/providers.dart';
 import '../../l10n/app_localizations.dart';
+import '../../sync/sync_providers.dart';
 import '../../sync/sync_chip.dart';
 import '../update/update_dialog.dart';
 import 'backup_restore_service.dart';
@@ -348,6 +351,11 @@ class _BusinessSettingsSectionState extends ConsumerState<_BusinessSettingsSecti
         upiId: _upiIdController.text.trim().isEmpty ? null : _upiIdController.text.trim(),
         invoiceTerms: _termsController.text.trim().isEmpty ? null : _termsController.text.trim(),
       );
+
+      // Keep the shop details in the account too (best effort, never blocks saving).
+      try {
+        unawaited(ref.read(profileSyncServiceProvider).pushCurrent());
+      } catch (_) {}
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
