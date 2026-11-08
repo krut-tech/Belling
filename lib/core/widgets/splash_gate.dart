@@ -198,9 +198,9 @@ class _Ledger extends StatelessWidget {
             right: 2,
             bottom: 4,
             child: DecoratedBox(
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 color: _cream,
-                borderRadius: const BorderRadius.horizontal(left: Radius.circular(2), right: Radius.circular(8)),
+                borderRadius: BorderRadius.horizontal(left: Radius.circular(2), right: Radius.circular(8)),
                 boxShadow: const [BoxShadow(color: Color(0x33000000), blurRadius: 18, offset: Offset(0, 10))],
               ),
               child: Center(
@@ -241,14 +241,14 @@ class _Ledger extends StatelessWidget {
                   ..setEntry(3, 2, 0.0014)
                   ..rotateY(angle),
                 child: Container(
-                  decoration: BoxDecoration(
-                    borderRadius: const BorderRadius.horizontal(left: Radius.circular(6), right: Radius.circular(12)),
-                    gradient: const LinearGradient(
+                  decoration: const BoxDecoration(
+                    borderRadius: BorderRadius.horizontal(left: Radius.circular(6), right: Radius.circular(12)),
+                    gradient: LinearGradient(
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                       colors: [Color(0xFFB32626), Color(0xFF8A1A1C), Color(0xFF7A1518)],
                     ),
-                    boxShadow: const [BoxShadow(color: Color(0x73000000), blurRadius: 24, offset: Offset(0, 14))],
+                    boxShadow: [BoxShadow(color: Color(0x73000000), blurRadius: 24, offset: Offset(0, 14))],
                   ),
                   child: Container(
                     margin: const EdgeInsets.fromLTRB(16, 10, 10, 10),

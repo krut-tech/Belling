@@ -221,7 +221,7 @@ String buildDuesMessage({
   int maxItemsPerBill = 6,
 }) {
   final lang = (languageCode == 'hi' || languageCode == 'gu') ? languageCode : 'en';
-  const t = {
+  final t = {
     'en': {
       'hello': 'Namaste {n},',
       'intro': 'This is a payment reminder from {s}.',

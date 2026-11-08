@@ -119,7 +119,7 @@ void main() {
         const DuePayment(amountPaise: 30000),
       ];
       final r = computeDues(docs: docs, payments: pays);
-      final ledger = 100000 + 45050 + 2000 - 5050 - 30000;
+      const ledger = 100000 + 45050 + 2000 - 5050 - 30000;
       expect(r.totalDuePaise, ledger);
     });
   });
