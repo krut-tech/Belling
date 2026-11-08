@@ -6,9 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:share_plus/share_plus.dart';
-import 'package:url_launcher/url_launcher.dart';
 
-import '../../core/dues.dart';
 import '../../core/dues_pdf.dart';
 import '../../core/invoice_pdf.dart' show buildUpiQrUri;
 import '../../core/invoice_style.dart';
@@ -40,7 +38,6 @@ class DuesReminderSheet extends ConsumerStatefulWidget {
 class _DuesReminderSheetState extends ConsumerState<DuesReminderSheet> {
   late Future<PartyDues?> _future;
   bool _busy = false;
-  String _lang = 'en';
 
   @override
   void initState() {
@@ -53,32 +50,9 @@ class _DuesReminderSheetState extends ConsumerState<DuesReminderSheet> {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
   }
 
-  String _message(PartyDues d) => buildDuesMessage(
-        partyName: d.party.name,
-        shopName: d.business?.name ?? 'Store',
-        dues: d.dues,
-        upiId: d.business?.upiId,
-        languageCode: _lang,
-      );
-
-  Future<void> _whatsApp(PartyDues d) async {
-    final phone = normalizeIndianPhone(d.party.phone);
-    final text = _message(d);
-    if (phone == null) {
-      _toast('Is customer ka phone number nahi hai. Party edit karke number daalo, ya "Share PDF" use karo.');
-      return;
-    }
-    setState(() => _busy = true);
-    try {
-      final uri = Uri.parse('https://wa.me/$phone?text=${Uri.encodeComponent(text)}');
-      final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
-      if (!ok) await Share.share(text);
-    } catch (_) {
-      await Share.share(text);
-    } finally {
-      if (mounted) setState(() => _busy = false);
-    }
-  }
+  /// One short line that travels with the PDF (WhatsApp shows it as the caption).
+  String _caption(PartyDues d) =>
+      '${d.business?.name ?? 'Store'} - payment reminder. Total due: ${formatRupees(d.dues.totalDuePaise)}';
 
   Future<void> _sharePdf(PartyDues d) async {
     setState(() => _busy = true);
@@ -99,9 +73,13 @@ class _DuesReminderSheetState extends ConsumerState<DuesReminderSheet> {
       );
       final dir = await getTemporaryDirectory();
       final safe = d.party.name.replaceAll(RegExp(r'[^A-Za-z0-9]+'), '_');
-      final file = File('${dir.path}/Dues_$safe.pdf');
+      final file = File('${dir.path}/Payment_reminder_$safe.pdf');
       await file.writeAsBytes(bytes, flush: true);
-      await Share.shareXFiles([XFile(file.path)], text: _message(d));
+      await Share.shareXFiles(
+        [XFile(file.path, mimeType: 'application/pdf', name: 'Payment_reminder_$safe.pdf')],
+        text: _caption(d),
+        subject: 'Payment reminder',
+      );
     } catch (e) {
       _toast('PDF nahi ban paya: $e');
     } finally {
@@ -228,23 +206,27 @@ class _DuesReminderSheetState extends ConsumerState<DuesReminderSheet> {
                         style: theme.textTheme.bodySmall,
                       ),
                     const SizedBox(height: 14),
-                    SegmentedButton<String>(
-                      segments: const [
-                        ButtonSegment(value: 'en', label: Text('English')),
-                        ButtonSegment(value: 'hi', label: Text('हिन्दी')),
-                        ButtonSegment(value: 'gu', label: Text('ગુજરાતી')),
-                      ],
-                      selected: {_lang},
-                      onSelectionChanged: (s) => setState(() => _lang = s.first),
-                    ),
-                    const SizedBox(height: 8),
                     Container(
-                      padding: const EdgeInsets.all(10),
+                      padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
                         color: theme.colorScheme.surfaceContainerHighest,
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(12),
                       ),
-                      child: Text(_message(d), style: const TextStyle(fontSize: 12.5)),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Icon(Icons.picture_as_pdf, size: 20),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              'Customer ko ek PDF jaayega: har bill ke items, paid / baaki, total aur UPI QR. '
+                              'Button dabane par WhatsApp chuno, phir ${d.party.name}'
+                              '${d.party.phone.trim().isEmpty ? '' : ' (${d.party.phone.trim()})'} select karo.',
+                              style: const TextStyle(fontSize: 12.5),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),
@@ -253,26 +235,16 @@ class _DuesReminderSheetState extends ConsumerState<DuesReminderSheet> {
                 top: false,
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: FilledButton.icon(
-                          style: FilledButton.styleFrom(minimumSize: const Size(48, 52), backgroundColor: const Color(0xFF1FA855)),
-                          onPressed: _busy ? null : () => _whatsApp(d),
-                          icon: const Icon(Icons.send),
-                          label: const Text('WhatsApp'),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          style: OutlinedButton.styleFrom(minimumSize: const Size(48, 52)),
-                          onPressed: _busy ? null : () => _sharePdf(d),
-                          icon: const Icon(Icons.picture_as_pdf),
-                          label: const Text('PDF share'),
-                        ),
-                      ),
-                    ],
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: FilledButton.icon(
+                      style: FilledButton.styleFrom(minimumSize: const Size(48, 54), backgroundColor: const Color(0xFF16A34A)),
+                      onPressed: _busy ? null : () => _sharePdf(d),
+                      icon: _busy
+                          ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                          : const Icon(Icons.send),
+                      label: const Text('WhatsApp pe PDF bhejo'),
+                    ),
                   ),
                 ),
               ),
