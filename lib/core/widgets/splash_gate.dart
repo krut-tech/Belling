@@ -201,7 +201,7 @@ class _Ledger extends StatelessWidget {
               decoration: const BoxDecoration(
                 color: _cream,
                 borderRadius: BorderRadius.horizontal(left: Radius.circular(2), right: Radius.circular(8)),
-                boxShadow: const [BoxShadow(color: Color(0x33000000), blurRadius: 18, offset: Offset(0, 10))],
+                boxShadow: [BoxShadow(color: Color(0x33000000), blurRadius: 18, offset: Offset(0, 10))],
               ),
               child: Center(
                 child: Column(
