@@ -11,6 +11,7 @@ import 'features/reports/reports_page.dart';
 import 'features/sell/done_page.dart';
 import 'features/sell/new_bill_page.dart';
 import 'features/sell/sell_page.dart';
+import 'features/update/update_dialog.dart';
 import 'core/widgets/motion.dart';
 import 'l10n/app_localizations.dart';
 
@@ -129,7 +130,9 @@ class ScaffoldWithNavBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     return Scaffold(
-      body: TabFadeIn(index: navigationShell.currentIndex, child: navigationShell),
+      body: UpdateChecker(
+        child: TabFadeIn(index: navigationShell.currentIndex, child: navigationShell),
+      ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: navigationShell.currentIndex,
         animationDuration: const Duration(milliseconds: 400),

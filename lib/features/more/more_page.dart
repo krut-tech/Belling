@@ -9,6 +9,7 @@ import '../../core/providers/locale_provider.dart';
 import '../../data/providers.dart';
 import '../../l10n/app_localizations.dart';
 import '../../sync/sync_chip.dart';
+import '../update/update_dialog.dart';
 import 'backup_restore_service.dart';
 
 class MorePage extends ConsumerWidget {
@@ -64,6 +65,10 @@ class MorePage extends ConsumerWidget {
               },
             ),
           ),
+          const SizedBox(height: 16),
+
+          // App updates (GitHub releases)
+          const _UpdateCard(),
           const SizedBox(height: 16),
 
           // Business Settings
@@ -505,6 +510,56 @@ class _BusinessSettingsSectionState extends ConsumerState<_BusinessSettingsSecti
         debugPrint('Error loading business: $e\n$st');
         return Text(l10n.genericError);
       },
+    );
+  }
+}
+
+
+class _UpdateCard extends StatefulWidget {
+  const _UpdateCard();
+
+  @override
+  State<_UpdateCard> createState() => _UpdateCardState();
+}
+
+class _UpdateCardState extends State<_UpdateCard> {
+  String _version = '';
+  bool _checking = false;
+
+  @override
+  void initState() {
+    super.initState();
+    currentVersionLabel().then((v) {
+      if (mounted) setState(() => _version = v);
+    });
+  }
+
+  Future<void> _check() async {
+    setState(() => _checking = true);
+    final release = await checkForUpdate();
+    if (!mounted) return;
+    setState(() => _checking = false);
+    if (release != null) {
+      await showUpdateDialog(context, release);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('App up to date hai (ya internet nahi hai).')),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: ListTile(
+        leading: const Icon(Icons.system_update, color: Colors.green, size: 32),
+        title: const Text('App update', style: TextStyle(fontWeight: FontWeight.bold)),
+        subtitle: Text('Version $_version'),
+        trailing: _checking
+            ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2))
+            : const Icon(Icons.chevron_right),
+        onTap: _checking ? null : _check,
+      ),
     );
   }
 }
