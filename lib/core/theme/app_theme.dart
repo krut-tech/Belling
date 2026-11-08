@@ -49,7 +49,7 @@ class AppTheme {
         color: AppColors.lightSurface,
         elevation: 0,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(20),
           side: const BorderSide(color: AppColors.lightBorder, width: 1),
         ),
       ),
@@ -134,16 +134,17 @@ class AppTheme {
         centerTitle: false,
         titleTextStyle: TextStyle(
           fontSize: 20,
-          fontWeight: FontWeight.w700,
+          fontWeight: FontWeight.w800,
           color: AppColors.lightText,
         ),
       ),
       navigationBarTheme: NavigationBarThemeData(
         backgroundColor: AppColors.lightSurface,
         surfaceTintColor: Colors.transparent,
-        elevation: 3,
-        height: 68,
-        indicatorColor: AppColors.lightPrimary.withValues(alpha: 0.14),
+        elevation: 8,
+        shadowColor: AppColors.ink,
+        height: 72,
+        indicatorColor: AppColors.softSaffron,
         iconTheme: WidgetStateProperty.resolveWith(
           (s) => IconThemeData(color: s.contains(WidgetState.selected) ? AppColors.lightPrimary : AppColors.lightMuted),
         ),

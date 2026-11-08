@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/money.dart';
+import '../../core/theme/app_colors.dart';
 import '../../data/providers.dart';
 import '../../l10n/app_localizations.dart';
 import '../../sync/sync_chip.dart';
@@ -20,38 +21,130 @@ class SellPage extends ConsumerWidget {
       fontFeatures: [FontFeature.tabularFigures()],
     );
 
+    final businessName = ref.watch(activeBusinessProvider).valueOrNull?.name;
+    final docs = todayDocsAsync.valueOrNull ?? const [];
+    var salesPaise = 0;
+    var billCount = 0;
+    for (final d in docs) {
+      if (d.document.status == 'cancelled') continue;
+      if (d.document.docType == 'invoice') {
+        salesPaise += d.document.totalPaise;
+        billCount++;
+      } else if (d.document.docType == 'credit_note') {
+        salesPaise -= d.document.totalPaise;
+      }
+    }
+
     return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n.tabSell),
-        actions: const [
-          Padding(
-            padding: EdgeInsets.only(right: 16),
-            child: SyncChip(),
-          ),
-        ],
-      ),
       body: Column(
         children: [
+          // Haldi header: saffron-to-crimson gradient with today's sales card.
+          Container(
+            width: double.infinity,
+            padding: EdgeInsets.fromLTRB(20, MediaQuery.of(context).padding.top + 14, 20, 22),
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [AppColors.saffron, AppColors.crimson, AppColors.wine],
+                stops: [0, 0.7, 1],
+              ),
+              borderRadius: BorderRadius.vertical(bottom: Radius.circular(32)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        (businessName == null || businessName.isEmpty) ? l10n.tabSell : businessName,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w800),
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(18),
+                      ),
+                      child: const SyncChip(),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(18),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(24),
+                    boxShadow: const [BoxShadow(color: Color(0x38000000), blurRadius: 24, offset: Offset(0, 12))],
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              l10n.todayBills,
+                              style: const TextStyle(fontSize: 13, color: AppColors.lightMuted, fontWeight: FontWeight.w600),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              formatRupees(salesPaise),
+                              style: const TextStyle(
+                                fontSize: 34,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: -0.5,
+                                color: AppColors.ink,
+                                fontFeatures: [FontFeature.tabularFigures()],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFDCFCE7),
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                        child: Text(
+                          '$billCount',
+                          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: Color(0xFF166534)),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
           Padding(
-            padding: const EdgeInsets.all(16.0),
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
             child: SizedBox(
               width: double.infinity,
               height: 56,
               child: ElevatedButton.icon(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Theme.of(context).colorScheme.primary,
-                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                  backgroundColor: AppColors.ink,
+                  foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(18),
                   ),
                 ),
                 onPressed: () {
                   context.go('/sell/new');
                 },
-                icon: const Icon(Icons.add_shopping_cart, size: 28),
+                icon: const Icon(Icons.add_shopping_cart, size: 26),
                 label: Text(
                   l10n.newBill,
-                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
                 ),
               ),
             ),
@@ -105,10 +198,10 @@ class SellPage extends ConsumerWidget {
                     return FadeSlideIn(index: index, child: ListTile(
                       minVerticalPadding: 12,
                       leading: CircleAvatar(
-                        backgroundColor: isCancelled ? Colors.red.shade100 : Colors.blue.shade100,
+                        backgroundColor: isCancelled ? Colors.red.shade100 : AppColors.softSaffron,
                         child: Icon(
                           isCancelled ? Icons.cancel : Icons.receipt,
-                          color: isCancelled ? Colors.red : Colors.blue.shade900,
+                          color: isCancelled ? Colors.red : AppColors.lightPrimary,
                         ),
                       ),
                       title: Row(
