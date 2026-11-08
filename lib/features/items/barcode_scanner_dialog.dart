@@ -72,6 +72,15 @@ class _BarcodeScannerDialogState extends State<BarcodeScannerDialog> {
     super.dispose();
   }
 
+  Future<void> _retryCamera() async {
+    try {
+      await _scanner.stop();
+    } catch (_) {}
+    try {
+      await _scanner.start();
+    } catch (_) {}
+  }
+
   void _submitCode(String code) {
     // onDetect fires many times per second; pop exactly once, otherwise the
     // extra pops close the page underneath the dialog.
@@ -193,7 +202,24 @@ class _BarcodeScannerDialogState extends State<BarcodeScannerDialog> {
                             : l10n.cameraNotAvailable,
                         textAlign: TextAlign.center,
                       ),
+                      const SizedBox(height: 6),
+                      Text(
+                        '(${error.errorCode.name}${error.errorDetails?.message == null ? '' : ': ${error.errorDetails!.message}'})',
+                        textAlign: TextAlign.center,
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontSize: 11, color: Colors.grey),
+                      ),
                       const SizedBox(height: 12),
+                      OutlinedButton.icon(
+                        style: OutlinedButton.styleFrom(
+                          minimumSize: const Size.fromHeight(48),
+                        ),
+                        onPressed: _retryCamera,
+                        icon: const Icon(Icons.refresh),
+                        label: const Text('Camera dobara try karo'),
+                      ),
+                      const SizedBox(height: 8),
                       ElevatedButton(
                         style: ElevatedButton.styleFrom(
                           minimumSize: const Size.fromHeight(48),

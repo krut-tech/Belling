@@ -53,6 +53,10 @@ android {
 
     buildTypes {
         release {
+            // R8 shrinking can strip the camera/ML Kit classes the barcode scanner needs
+            // (scanner works in debug but fails in release), so keep it off.
+            isMinifyEnabled = false
+            isShrinkResources = false
             if (hasReleaseKey) {
                 signingConfig = signingConfigs.getByName("release")
             } else {
