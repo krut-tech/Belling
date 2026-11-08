@@ -9,6 +9,7 @@ import '../../data/database.dart';
 import '../../data/providers.dart';
 import '../../data/repositories/party_repository.dart';
 import '../../l10n/app_localizations.dart';
+import 'dues_reminder_sheet.dart';
 import 'party_form_dialog.dart';
 import 'receive_payment_dialog.dart';
 
@@ -167,12 +168,16 @@ class PartyDetailPage extends ConsumerWidget {
                                 minimumSize: const Size(48, 48),
                               ),
                               onPressed: () {
-                                _sendReminder(
-                                  context: context,
-                                  party: party,
-                                  balancePaise: balancePaise,
-                                  business: business,
-                                );
+                                if (balancePaise > 0) {
+                                  showDuesReminderSheet(context, partyId: party.id);
+                                } else {
+                                  _sendReminder(
+                                    context: context,
+                                    party: party,
+                                    balancePaise: balancePaise,
+                                    business: business,
+                                  );
+                                }
                               },
                               icon: const Icon(Icons.share),
                               label: Text(l10n.sendReminder),

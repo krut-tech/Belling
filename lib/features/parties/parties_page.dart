@@ -1,3 +1,4 @@
+import 'dues_reminder_sheet.dart';
 import 'package:flutter/material.dart';
 import '../../core/widgets/motion.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -167,7 +168,15 @@ class _PartiesPageState extends ConsumerState<PartiesPage> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           _buildBalanceBadge(context, l10n, balancePaise),
-                          const SizedBox(width: 8),
+                          if (balancePaise > 0)
+                            IconButton(
+                              constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+                              icon: const Icon(Icons.notifications_active_outlined),
+                              tooltip: 'Bakaya reminder bhejo',
+                              onPressed: () => showDuesReminderSheet(context, partyId: p.id),
+                            )
+                          else
+                            const SizedBox(width: 8),
                           IconButton(
                             constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
                             icon: const Icon(Icons.edit_outlined),
