@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import 'features/business/estimates_page.dart';
+import 'features/business/item_details_page.dart';
+import 'features/business/reminders_page.dart';
+import 'features/business/staff_page.dart';
 import 'features/business/expenses_page.dart';
 import 'features/business/new_purchase_page.dart';
 import 'features/business/suppliers_page.dart';
@@ -116,6 +119,18 @@ final appRouter = GoRouter(
                 GoRoute(
                   path: 'purchase/new',
                   builder: (context, state) => const NewPurchasePage(),
+                ),
+                GoRoute(
+                  path: 'staff',
+                  builder: (context, state) => const StaffPage(),
+                ),
+                GoRoute(
+                  path: 'item-details',
+                  builder: (context, state) => const ItemDetailsPage(),
+                ),
+                GoRoute(
+                  path: 'reminders',
+                  builder: (context, state) => const RemindersPage(),
                 ),
                 GoRoute(
                   path: 'estimates',

@@ -8,6 +8,7 @@ import '../../core/money.dart';
 import '../../data/providers.dart';
 import '../../data/repositories/document_repository.dart';
 import '../../l10n/app_localizations.dart';
+import 'gst_json_export.dart';
 import 'return_dialog.dart';
 
 class DonePage extends ConsumerStatefulWidget {
@@ -264,6 +265,19 @@ class _DonePageState extends ConsumerState<DonePage> {
                 ],
               ),
               const SizedBox(height: 16),
+              if (doc.docType == 'invoice' || doc.docType == 'credit_note')
+                Wrap(alignment: WrapAlignment.center, spacing: 8, children: [
+                  TextButton.icon(
+                    onPressed: () => exportEinvoice(context, ref, doc),
+                    icon: const Icon(Icons.data_object, size: 18),
+                    label: const Text('E-invoice JSON'),
+                  ),
+                  TextButton.icon(
+                    onPressed: () => exportEwayBill(context, ref, doc),
+                    icon: const Icon(Icons.local_shipping_outlined, size: 18),
+                    label: const Text('E-way bill JSON'),
+                  ),
+                ]),
               if (!isCancelled && doc.docType == 'invoice')
                 TextButton.icon(
                   style: TextButton.styleFrom(minimumSize: const Size(120, 48)),
