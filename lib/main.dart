@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'core/config.dart';
 import 'core/providers/locale_provider.dart';
+import 'core/reminder_service.dart';
 import 'core/theme/app_theme.dart';
 import 'core/widgets/splash_gate.dart';
 import 'data/providers.dart';
@@ -78,7 +79,7 @@ class UniversalBillingApp extends ConsumerWidget {
       routerConfig: appRouter,
       builder: (context, child) => SplashGate(
         ready: ref.read(appReadyProvider.future),
-        child: AppLockGate(child: _SyncStarter(child: child ?? const SizedBox.shrink())),
+        child: AppLockGate(child: _SyncStarter(child: _ReminderScheduler(child: child ?? const SizedBox.shrink()))),
       ),
     );
   }
@@ -94,4 +95,41 @@ class _SyncStarter extends ConsumerWidget {
     ref.watch(syncBootstrapProvider);
     return child;
   }
+}
+
+/// Re-plans the daily udhar notification when the app opens and whenever it
+/// goes to the background (so the numbers in it are fresh).
+class _ReminderScheduler extends ConsumerStatefulWidget {
+  const _ReminderScheduler({required this.child});
+  final Widget child;
+
+  @override
+  ConsumerState<_ReminderScheduler> createState() => _ReminderSchedulerState();
+}
+
+class _ReminderSchedulerState extends ConsumerState<_ReminderScheduler> with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _refresh());
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  void _refresh() {
+    ReminderService.instance.refresh(ref.read(databaseProvider), ref.read(partyRepositoryProvider));
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused) _refresh();
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
 }
