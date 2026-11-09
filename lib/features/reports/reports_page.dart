@@ -65,6 +65,7 @@ class _ReportsPageState extends ConsumerState<ReportsPage> {
 
     final salesAsync = ref.watch(salesReportProvider);
     final profitAsync = ref.watch(profitProvider);
+    final expenseTotal = ref.watch(expensesInRangeProvider).valueOrNull ?? 0;
     final topAmountAsync = ref.watch(topItemsByAmountProvider);
     final topQtyAsync = ref.watch(topItemsByQtyProvider);
     final lowStockAsync = ref.watch(lowStockProvider);
@@ -131,6 +132,7 @@ class _ReportsPageState extends ConsumerState<ReportsPage> {
         onRefresh: () async {
           ref.invalidate(salesReportProvider);
           ref.invalidate(profitProvider);
+          ref.invalidate(expensesInRangeProvider);
           ref.invalidate(topItemsByAmountProvider);
           ref.invalidate(topItemsByQtyProvider);
           ref.invalidate(lowStockProvider);
@@ -266,14 +268,19 @@ class _ReportsPageState extends ConsumerState<ReportsPage> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          _buildMetricTile(context, 'Munafa', formatRupees(p.profitPaise), isPrimary: true),
+                          _buildMetricTile(context, 'Net munafa', formatRupees(p.profitPaise - expenseTotal), isPrimary: true),
                           _buildMetricTile(context, 'Bikri (GST ke bina)', formatRupees(p.revenuePaise)),
-                          _buildMetricTile(context, 'Margin', '${p.marginPercent.toStringAsFixed(1)}%'),
+                          _buildMetricTile(
+                            context,
+                            'Margin',
+                            '${(p.revenuePaise <= 0 ? 0 : (p.profitPaise - expenseTotal) * 100 / p.revenuePaise).toStringAsFixed(1)}%',
+                          ),
                         ],
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'Maal ki cost: ${formatRupees(p.costPaise)} (item ki abhi ki cost price se).'
+                        'Maal ki cost: ${formatRupees(p.costPaise)} (item ki abhi ki cost price se). '
+                        'Kharcha: ${formatRupees(expenseTotal)}. Net munafa = bikri − maal ki cost − kharcha.'
                         '${p.itemsWithoutCost > 0 ? ' ${p.itemsWithoutCost} item(s) ki cost price set nahi hai, unka munafa zyada dikhega.' : ''}',
                         style: Theme.of(context).textTheme.bodySmall,
                       ),

@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import 'features/business/expenses_page.dart';
+import 'features/business/new_purchase_page.dart';
+import 'features/business/suppliers_page.dart';
 import 'features/items/items_page.dart';
 import 'features/more/backup_sync_page.dart';
 import 'features/more/invoice_design_page.dart';
@@ -104,6 +107,18 @@ final appRouter = GoRouter(
                 GoRoute(
                   path: 'backup-sync',
                   builder: (context, state) => const BackupAndSyncPage(),
+                ),
+                GoRoute(
+                  path: 'suppliers',
+                  builder: (context, state) => const SuppliersPage(),
+                ),
+                GoRoute(
+                  path: 'purchase/new',
+                  builder: (context, state) => const NewPurchasePage(),
+                ),
+                GoRoute(
+                  path: 'expenses',
+                  builder: (context, state) => const ExpensesPage(),
                 ),
                 GoRoute(
                   path: 'invoice-design',

@@ -84,3 +84,10 @@ final gstSummaryProvider = FutureProvider<GstSectionSummary>((ref) async {
   final range = ref.watch(reportsDateRangeProvider);
   return repo.getGstSummary(range.start, range.end);
 });
+
+/// Total expenses (kharcha) in the selected report range.
+final expensesInRangeProvider = FutureProvider<int>((ref) async {
+  ref.watch(reportsRefreshProvider);
+  final range = ref.watch(reportsDateRangeProvider);
+  return ref.watch(businessRepositoryProvider).expensesTotal(range.start, range.end);
+});

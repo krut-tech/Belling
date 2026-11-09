@@ -72,6 +72,30 @@ class MorePage extends ConsumerWidget {
           ),
           const SizedBox(height: 16),
 
+          // Business tools
+          Card(
+            child: Column(
+              children: [
+                ListTile(
+                  leading: const Icon(Icons.local_shipping_outlined, color: Colors.deepOrange),
+                  title: const Text('Supplier & purchase', style: TextStyle(fontWeight: FontWeight.bold)),
+                  subtitle: const Text('Maal kharido, stock badhao, supplier ko kitna dena hai'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => context.push('/more/suppliers'),
+                ),
+                const Divider(height: 1),
+                ListTile(
+                  leading: const Icon(Icons.payments_outlined, color: Colors.teal),
+                  title: const Text('Kharcha (expenses)', style: TextStyle(fontWeight: FontWeight.bold)),
+                  subtitle: const Text('Rent, salary, bijli ... net munafa mein ghatega'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => context.push('/more/expenses'),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+
           // App lock
           const AppLockCard(),
           const SizedBox(height: 16),
