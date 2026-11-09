@@ -2,7 +2,9 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/business_math.dart';
 import '../../core/tax.dart';
+import '../../data/records.dart';
 import '../../data/database.dart';
 import '../../data/providers.dart';
 import '../../data/repositories/product_repository.dart';
@@ -359,6 +361,54 @@ class NewBillNotifier extends StateNotifier<NewBillState> {
   void setBusinessStateCode(String code) {
     if (code == state.businessStateCode) return;
     state = state.copyWith(businessStateCode: code);
+  }
+
+  /// Bill-level discount: spreads [totalDiscountPaise] over the lines in
+  /// proportion to their amount (replaces any per-item discounts). 0 clears.
+  void applyBillDiscount(int totalDiscountPaise) {
+    if (state.lines.isEmpty) return;
+    final gross = state.lines.map((l) => l.grossPaise).toList();
+    final sum = gross.fold<int>(0, (a, b) => a + b);
+    if (totalDiscountPaise < 0 || totalDiscountPaise > sum) {
+      state = state.copyWith(error: 'Discount bill ke amount se zyada nahi ho sakta');
+      return;
+    }
+    final parts = distributeDiscount(gross, totalDiscountPaise);
+    final newLines = <CartLine>[
+      for (var i = 0; i < state.lines.length; i++) state.lines[i].copyWith(discountPaise: parts[i]),
+    ];
+    state = state.copyWith(lines: newLines, clearError: true);
+    _persistDraft();
+  }
+
+  int get currentDiscountPaise => state.lines.fold<int>(0, (a, l) => a + l.discountPaise);
+
+  /// Saves the current cart as an estimate / quotation (no stock, no invoice
+  /// number, no GST filing). Returns false if the cart is empty.
+  Future<bool> saveAsEstimate() async {
+    if (state.lines.isEmpty) return false;
+    await ref.read(recordsRepositoryProvider).save(RecordKinds.estimate, {
+      'party_id': state.party?.id,
+      'party_name': state.party?.name ?? '',
+      'lines': state.lines.map((l) => l.toJson()).toList(),
+      'total_paise': state.grandTotalPaise,
+    });
+    return true;
+  }
+
+  /// Replaces the cart with the lines of a saved estimate.
+  Future<void> loadEstimate(AppRecord estimate) async {
+    final docRepo = ref.read(documentRepositoryProvider);
+    await docRepo.saveDraftCart(
+      partyId: estimate.data['party_id'] as String?,
+      cartJson: jsonEncode({
+        'lines': estimate.data['lines'],
+        'partyId': estimate.data['party_id'],
+        'paymentMethod': 'cash',
+        'customPaidAmountPaise': null,
+      }),
+    );
+    await loadDraft();
   }
 
   Future<void> clearCart() async {

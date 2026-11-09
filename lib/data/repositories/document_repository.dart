@@ -85,6 +85,20 @@ class DocumentRepository {
     );
   }
 
+  Future<Document> returnItems({
+    required String documentId,
+    required Map<String, int> returnQtyByLineId,
+    required String reason,
+  }) {
+    return db.returnItems(
+      businessId: businessId,
+      deviceId: deviceId,
+      documentId: documentId,
+      returnQtyByLineId: returnQtyByLineId,
+      reason: reason,
+    );
+  }
+
   Future<void> saveDraftCart({
     String? partyId,
     required String cartJson,

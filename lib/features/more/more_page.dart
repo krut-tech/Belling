@@ -85,6 +85,14 @@ class MorePage extends ConsumerWidget {
                 ),
                 const Divider(height: 1),
                 ListTile(
+                  leading: const Icon(Icons.request_quote_outlined, color: Colors.indigo),
+                  title: const Text('Estimates / quotation', style: TextStyle(fontWeight: FontWeight.bold)),
+                  subtitle: const Text('Bina bill kiye rate bhejo, baad mein bill mein badlo'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => context.push('/more/estimates'),
+                ),
+                const Divider(height: 1),
+                ListTile(
                   leading: const Icon(Icons.payments_outlined, color: Colors.teal),
                   title: const Text('Kharcha (expenses)', style: TextStyle(fontWeight: FontWeight.bold)),
                   subtitle: const Text('Rent, salary, bijli ... net munafa mein ghatega'),

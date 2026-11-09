@@ -978,6 +978,151 @@ class AppDatabase extends _$AppDatabase {
       return cnDoc;
     });
   }
+
+  /// Quantity of each original line (by line id) already returned through
+  /// earlier credit notes. Matched by product id + rate because credit-note
+  /// lines are new rows.
+  Future<Map<String, int>> returnedQtyByProduct(String documentId) async {
+    final cns = await (select(documents)
+          ..where((t) => t.refDocumentId.equals(documentId) & t.docType.equals('credit_note')))
+        .get();
+    final out = <String, int>{};
+    for (final cn in cns) {
+      final ls = await (select(documentLines)..where((t) => t.documentId.equals(cn.id))).get();
+      for (final l in ls) {
+        out[l.productId] = (out[l.productId] ?? 0) + l.qtyMilli;
+      }
+    }
+    return out;
+  }
+
+  /// Partial sale return: issues a credit note for [returnQtyByLineId]
+  /// (original line id -> qty in milli), puts stock back, and refunds cash only
+  /// for what the customer has already paid beyond what they still owe.
+  /// The original invoice stays valid.
+  Future<Document> returnItems({
+    required String businessId,
+    required String deviceId,
+    required String documentId,
+    required Map<String, int> returnQtyByLineId,
+    required String reason,
+  }) async {
+    return transaction(() async {
+      final origDoc = await (select(documents)..where((t) => t.id.equals(documentId))).getSingleOrNull();
+      if (origDoc == null) throw StateError('Document not found');
+      if (origDoc.docType != 'invoice') throw StateError('Sirf invoice ka return ho sakta hai');
+      if (origDoc.status == 'cancelled') throw StateError('Ye invoice cancel ho chuka hai');
+
+      final origLines = await (select(documentLines)..where((t) => t.documentId.equals(documentId))).get();
+      final already = await returnedQtyByProduct(documentId);
+
+      final picked = <DocumentLine, int>{};
+      final usedByProduct = <String, int>{};
+      for (final l in origLines) {
+        final q = returnQtyByLineId[l.id] ?? 0;
+        if (q <= 0) continue;
+        final prior = (already[l.productId] ?? 0) + (usedByProduct[l.productId] ?? 0);
+        final canReturn = l.qtyMilli - prior;
+        if (q > canReturn) {
+          throw StateError('${l.name}: sirf ${canReturn / 1000} wapas ho sakta hai');
+        }
+        usedByProduct[l.productId] = (usedByProduct[l.productId] ?? 0) + q;
+        picked[l] = q;
+      }
+      if (picked.isEmpty) throw StateError('Return ki quantity daalo');
+
+      bool wasInclusive(DocumentLine l) {
+        final gross = divideRoundHalfUp(l.qtyMilli * l.ratePaise, 1000);
+        return (gross - l.discountPaise) != l.taxablePaise;
+      }
+
+      final cnLines = picked.entries.map((e) {
+        final l = e.key;
+        final q = e.value;
+        // Discount shrinks in proportion to the returned quantity.
+        final disc = l.qtyMilli == 0 ? 0 : (l.discountPaise * q / l.qtyMilli).round();
+        return IssueDocumentLineParam(
+          productId: l.productId,
+          name: l.name,
+          hsn: l.hsn,
+          qtyMilli: q,
+          ratePaise: l.ratePaise,
+          discountPaise: disc,
+          gstRateBp: l.gstRateBp,
+          priceIncludesTax: wasInclusive(l),
+        );
+      }).toList();
+
+      final seller = await (select(businesses)..where((t) => t.id.equals(businessId))).getSingleOrNull();
+      if (seller == null) throw StateError('Business not found');
+      final buyer = origDoc.partyId != null
+          ? await (select(parties)..where((t) => t.id.equals(origDoc.partyId!))).getSingleOrNull()
+          : null;
+
+      final snapshot = {
+        'seller': {
+          'id': seller.id,
+          'name': seller.name,
+          'gstin': seller.gstin,
+          'state_code': seller.stateCode,
+          'address': seller.address,
+          'upi_id': seller.upiId,
+          'invoice_terms': seller.invoiceTerms,
+        },
+        'buyer': buyer != null
+            ? {'id': buyer.id, 'name': buyer.name, 'phone': buyer.phone, 'gstin': buyer.gstin, 'state_code': buyer.stateCode}
+            : (origDoc.partyId != null ? {'id': origDoc.partyId} : null),
+        'cancel_reason': reason,
+        'cancelled_document_id': documentId,
+        'cancelled_document_number': origDoc.number,
+        'partial_return': true,
+      };
+
+      final cn = await issueDocument(
+        businessId: businessId,
+        deviceId: deviceId,
+        docType: 'credit_note',
+        financialYear: getFinancialYear(origDoc.issuedAt),
+        partyId: origDoc.partyId,
+        lines: cnLines,
+        isInterState: origDoc.igstPaise != 0,
+        refDocumentId: documentId,
+        customSnapshot: snapshot,
+      );
+
+      // Refund only what was paid beyond what is still owed after all returns.
+      final origPayments = await (select(payments)..where((t) => t.documentId.equals(documentId))).get();
+      final priorCns = await (select(documents)
+            ..where((t) => t.refDocumentId.equals(documentId) & t.docType.equals('credit_note')))
+          .get();
+      var creditedTotal = 0;
+      var netPaid = origPayments.fold<int>(0, (a, p) => a + p.amountPaise);
+      for (final c in priorCns) {
+        creditedTotal += c.totalPaise;
+        final cps = await (select(payments)..where((t) => t.documentId.equals(c.id))).get();
+        netPaid += cps.fold<int>(0, (a, p) => a + p.amountPaise);
+      }
+      // priorCns already includes the credit note just issued (creditedTotal covers it),
+      // and netPaid does not yet include a refund for it.
+      final stillOwed = origDoc.totalPaise - creditedTotal;
+      final refund = netPaid - (stillOwed > 0 ? stillOwed : 0);
+      if (refund > 0) {
+        final now = DateTime.now();
+        final method = origPayments.isNotEmpty ? origPayments.first.method : 'cash';
+        await into(payments).insert(PaymentsCompanion.insert(
+          id: const Uuid().v4(),
+          businessId: businessId,
+          documentId: Value(cn.id),
+          partyId: Value(origDoc.partyId),
+          method: method,
+          amountPaise: -refund,
+          paidAt: now,
+          createdAt: now,
+        ));
+      }
+      return cn;
+    });
+  }
 }
 
 String getFinancialYear([DateTime? date]) {

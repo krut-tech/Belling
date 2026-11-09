@@ -8,6 +8,7 @@ import '../../core/money.dart';
 import '../../data/providers.dart';
 import '../../data/repositories/document_repository.dart';
 import '../../l10n/app_localizations.dart';
+import 'return_dialog.dart';
 
 class DonePage extends ConsumerStatefulWidget {
   final String documentId;
@@ -263,6 +264,13 @@ class _DonePageState extends ConsumerState<DonePage> {
                 ],
               ),
               const SizedBox(height: 16),
+              if (!isCancelled && doc.docType == 'invoice')
+                TextButton.icon(
+                  style: TextButton.styleFrom(minimumSize: const Size(120, 48)),
+                  onPressed: () => showReturnDialog(context, ref, doc),
+                  icon: const Icon(Icons.assignment_return_outlined),
+                  label: const Text('Maal wapas (return)'),
+                ),
               if (!isCancelled)
                 TextButton.icon(
                   style: TextButton.styleFrom(

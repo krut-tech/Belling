@@ -144,6 +144,64 @@ class _NewBillPageState extends ConsumerState<NewBillPage> {
     );
   }
 
+  void _showBillDiscountDialog() {
+    final notifier = ref.read(newBillProvider.notifier);
+    final bill = ref.read(newBillProvider);
+    final gross = bill.lines.fold<int>(0, (a, l) => a + l.grossPaise);
+    final c = TextEditingController(
+      text: notifier.currentDiscountPaise > 0 ? formatPaiseToRupeesInput(notifier.currentDiscountPaise) : '',
+    );
+    var percent = false;
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setS) => AlertDialog(
+          title: const Text('Poore bill par discount'),
+          content: Column(mainAxisSize: MainAxisSize.min, children: [
+            Text('Bill ka amount (GST se pehle): ${formatRupees(gross)}'),
+            const SizedBox(height: 8),
+            TextField(
+              controller: c,
+              autofocus: true,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              decoration: InputDecoration(labelText: percent ? 'Discount %' : 'Discount ₹'),
+            ),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Percent mein'),
+              value: percent,
+              onChanged: (v) => setS(() => percent = v),
+            ),
+            const Text('Ye sab items par barabar (amount ke hisaab se) baant diya jayega. Pehle ke item discount hat jayenge.', style: TextStyle(fontSize: 12)),
+          ]),
+          actions: [
+            TextButton(
+              onPressed: () {
+                notifier.applyBillDiscount(0);
+                Navigator.pop(ctx);
+              },
+              child: const Text('Hatao'),
+            ),
+            FilledButton(
+              onPressed: () {
+                int? paise;
+                if (percent) {
+                  final pct = double.tryParse(c.text.trim());
+                  if (pct != null && pct >= 0 && pct <= 100) paise = (gross * pct / 100).round();
+                } else {
+                  paise = parseRupeesToPaise(c.text);
+                }
+                if (paise != null) notifier.applyBillDiscount(paise);
+                Navigator.pop(ctx);
+              },
+              child: const Text('Lagao'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   void _showEditDiscountDialog(int index, CartLine line) {
     final currentRupees = line.discountPaise == 0
         ? ''
@@ -193,6 +251,26 @@ class _NewBillPageState extends ConsumerState<NewBillPage> {
       appBar: AppBar(
         title: Text(l10n.newBill),
         actions: [
+          if (billState.lines.isNotEmpty)
+            IconButton(
+              constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+              icon: const Icon(Icons.percent),
+              tooltip: 'Poore bill par discount',
+              onPressed: _showBillDiscountDialog,
+            ),
+          if (billState.lines.isNotEmpty)
+            IconButton(
+              constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+              icon: const Icon(Icons.request_quote_outlined),
+              tooltip: 'Estimate save karo',
+              onPressed: () async {
+                final ok = await ref.read(newBillProvider.notifier).saveAsEstimate();
+                if (!context.mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                  content: Text(ok ? 'Estimate save ho gaya (More > Estimates mein dekho)' : 'Cart khali hai'),
+                ));
+              },
+            ),
           if (billState.lines.isNotEmpty)
             IconButton(
               constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
