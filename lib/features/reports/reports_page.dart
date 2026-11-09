@@ -64,6 +64,7 @@ class _ReportsPageState extends ConsumerState<ReportsPage> {
     final dateRange = ref.watch(reportsDateRangeProvider);
 
     final salesAsync = ref.watch(salesReportProvider);
+    final profitAsync = ref.watch(profitProvider);
     final topAmountAsync = ref.watch(topItemsByAmountProvider);
     final topQtyAsync = ref.watch(topItemsByQtyProvider);
     final lowStockAsync = ref.watch(lowStockProvider);
@@ -129,6 +130,7 @@ class _ReportsPageState extends ConsumerState<ReportsPage> {
       body: RefreshIndicator(
         onRefresh: () async {
           ref.invalidate(salesReportProvider);
+          ref.invalidate(profitProvider);
           ref.invalidate(topItemsByAmountProvider);
           ref.invalidate(topItemsByQtyProvider);
           ref.invalidate(lowStockProvider);
@@ -239,6 +241,48 @@ class _ReportsPageState extends ConsumerState<ReportsPage> {
               ),
               loading: () => const Card(child: SizedBox(height: 120, child: Center(child: CircularProgressIndicator()))),
               error: (e, st) => Card(child: Padding(padding: const EdgeInsets.all(16), child: Text('Error: $e'))),
+            ),
+            const SizedBox(height: 16),
+
+            // Profit estimate
+            profitAsync.when(
+              data: (p) => Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(Icons.trending_up, color: Theme.of(context).colorScheme.primary),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Munafa (profit)',
+                            style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          _buildMetricTile(context, 'Munafa', formatRupees(p.profitPaise), isPrimary: true),
+                          _buildMetricTile(context, 'Bikri (GST ke bina)', formatRupees(p.revenuePaise)),
+                          _buildMetricTile(context, 'Margin', '${p.marginPercent.toStringAsFixed(1)}%'),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Maal ki cost: ${formatRupees(p.costPaise)} (item ki abhi ki cost price se).'
+                        '${p.itemsWithoutCost > 0 ? ' ${p.itemsWithoutCost} item(s) ki cost price set nahi hai, unka munafa zyada dikhega.' : ''}',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              loading: () => const SizedBox.shrink(),
+              error: (e, st) => const SizedBox.shrink(),
             ),
             const SizedBox(height: 16),
 

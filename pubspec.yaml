@@ -32,6 +32,7 @@ dependencies:
   supabase_flutter: ^2.8.0
   connectivity_plus: ^6.0.0
   package_info_plus: ^8.0.0
+  crypto: ^3.0.3
   open_filex: ^4.5.0
 
 dev_dependencies:

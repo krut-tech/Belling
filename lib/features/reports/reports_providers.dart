@@ -45,6 +45,13 @@ final salesReportProvider = FutureProvider<SalesReportData>((ref) async {
   return repo.getSalesReport(range.start, range.end);
 });
 
+final profitProvider = FutureProvider<ProfitData>((ref) async {
+  ref.watch(reportsRefreshProvider);
+  final repo = ref.watch(reportsRepositoryProvider);
+  final range = ref.watch(reportsDateRangeProvider);
+  return repo.getProfit(range.start, range.end);
+});
+
 final topItemsByAmountProvider = FutureProvider<List<TopItemData>>((ref) async {
   ref.watch(reportsRefreshProvider);
   final repo = ref.watch(reportsRepositoryProvider);

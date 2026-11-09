@@ -53,6 +53,17 @@ DateTimeRange getDateRangeForPreset(
   }
 }
 
+class ProfitData {
+  final int revenuePaise; // sales excluding GST, net of returns
+  final int costPaise; // qty x current cost price
+  final int itemsWithoutCost; // distinct sold items that have no cost price set
+
+  const ProfitData({required this.revenuePaise, required this.costPaise, required this.itemsWithoutCost});
+
+  int get profitPaise => revenuePaise - costPaise;
+  double get marginPercent => revenuePaise <= 0 ? 0 : profitPaise * 100 / revenuePaise;
+}
+
 class SalesReportData {
   final int salesTotalPaise;
   final int numberOfBills;
@@ -218,6 +229,39 @@ class ReportsRepository {
       paymentsReceivedUpiPaise: upi,
       paymentsReceivedCardPaise: card,
     );
+  }
+
+  /// Estimated profit = sales (ex-GST) - cost of goods sold. Credit notes (cancels,
+  /// returns) subtract. Uses each item's *current* cost price.
+  Future<ProfitData> getProfit(DateTime startDate, DateTime endDate) async {
+    final docs = await (db.select(db.documents)
+          ..where((t) =>
+              t.businessId.equals(businessId) &
+              t.issuedAt.isBiggerOrEqualValue(startDate) &
+              t.issuedAt.isSmallerOrEqualValue(endDate)))
+        .get();
+    if (docs.isEmpty) return const ProfitData(revenuePaise: 0, costPaise: 0, itemsWithoutCost: 0);
+
+    final sign = {for (final d in docs) d.id: d.docType == 'credit_note' ? -1 : (d.docType == 'invoice' ? 1 : 0)};
+    final lines = await (db.select(db.documentLines)
+          ..where((t) => t.businessId.equals(businessId) & t.documentId.isIn(docs.map((d) => d.id).toList())))
+        .get();
+    final products = {
+      for (final p in await (db.select(db.products)..where((t) => t.businessId.equals(businessId))).get()) p.id: p,
+    };
+
+    var revenue = 0;
+    var cost = 0;
+    final noCost = <String>{};
+    for (final l in lines) {
+      final sg = sign[l.documentId] ?? 0;
+      if (sg == 0) continue;
+      final unitCost = products[l.productId]?.costPaise ?? 0;
+      if (unitCost == 0) noCost.add(l.productId);
+      revenue += sg * l.taxablePaise;
+      cost += sg * ((l.qtyMilli * unitCost) / 1000).round();
+    }
+    return ProfitData(revenuePaise: revenue, costPaise: cost, itemsWithoutCost: noCost.length);
   }
 
   Future<List<TopItemData>> getTopItemsByAmount(DateTime startDate, DateTime endDate, {int limit = 10}) async {

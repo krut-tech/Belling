@@ -12,6 +12,8 @@ import '../../data/providers.dart';
 import '../../l10n/app_localizations.dart';
 import '../../sync/sync_providers.dart';
 import '../../sync/sync_chip.dart';
+import '../items/items_import_card.dart';
+import 'app_lock_card.dart';
 import '../update/update_dialog.dart';
 import 'backup_restore_service.dart';
 
@@ -68,6 +70,14 @@ class MorePage extends ConsumerWidget {
               },
             ),
           ),
+          const SizedBox(height: 16),
+
+          // App lock
+          const AppLockCard(),
+          const SizedBox(height: 16),
+
+          // Bulk item import
+          const ItemsImportCard(),
           const SizedBox(height: 16),
 
           // App updates (GitHub releases)

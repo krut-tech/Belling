@@ -8,6 +8,7 @@ import 'core/providers/locale_provider.dart';
 import 'core/theme/app_theme.dart';
 import 'core/widgets/splash_gate.dart';
 import 'data/providers.dart';
+import 'features/more/app_lock_gate.dart';
 import 'l10n/app_localizations.dart';
 import 'router.dart';
 import 'sync/sync_providers.dart';
@@ -77,7 +78,7 @@ class UniversalBillingApp extends ConsumerWidget {
       routerConfig: appRouter,
       builder: (context, child) => SplashGate(
         ready: ref.read(appReadyProvider.future),
-        child: _SyncStarter(child: child ?? const SizedBox.shrink()),
+        child: AppLockGate(child: _SyncStarter(child: child ?? const SizedBox.shrink())),
       ),
     );
   }
