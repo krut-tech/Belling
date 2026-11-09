@@ -282,6 +282,23 @@ class ProductRepository {
     });
   }
 
+  /// Sets only the cost price (used when a purchase changes the average cost).
+  Future<void> updateCost(String productId, int costPaise) async {
+    await db.transaction(() async {
+      await (db.update(db.products)..where((t) => t.id.equals(productId))).write(
+        ProductsCompanion(costPaise: Value(costPaise), updatedAt: Value(DateTime.now())),
+      );
+      final updated = await (db.select(db.products)..where((t) => t.id.equals(productId))).getSingleOrNull();
+      if (updated == null) return;
+      await db.enqueueOutboxCommand(
+        businessId: businessId,
+        deviceId: deviceId,
+        commandType: 'upsert_product',
+        payload: productToPayload(updated),
+      );
+    });
+  }
+
   /// Archives / deletes a product.
   Future<void> archive(String productId) async {
     await (db.delete(db.products)..where((tbl) => tbl.id.equals(productId))).go();

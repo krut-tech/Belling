@@ -5,6 +5,7 @@ import 'package:drift/drift.dart';
 import 'package:flutter/foundation.dart';
 
 import '../data/database.dart';
+import '../data/records.dart';
 
 /// Read side of sync: returns server rows with `server_seq > afterSeq`,
 /// ordered by `server_seq`. Implemented by SupabaseSyncRemote; faked in tests.
@@ -29,6 +30,7 @@ const kPullTables = <String>[
   'document_lines',
   'payments',
   'stock_movements',
+  'app_records',
 ];
 
 const kPullPageSize = 500;
@@ -117,6 +119,8 @@ class PullService {
         return _applyParty(r);
       case 'products':
         return _applyProduct(r);
+      case 'app_records':
+        return RecordsRepository.applyServerRow(db, r);
       case 'documents':
         return _applyDocument(r);
       case 'document_lines':

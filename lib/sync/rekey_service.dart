@@ -128,6 +128,10 @@ class RekeyService {
 
       // 11. Update OutboxCommands table & payload_json
       await db.customStatement(
+        'UPDATE app_records SET business_id = ? WHERE business_id = ?;',
+        [newBusinessId, oldBusinessId],
+      );
+      await db.customStatement(
         'UPDATE outbox_commands SET business_id = ?, device_id = ? WHERE business_id = ? OR device_id = ?;',
         [newBusinessId, newDeviceId, oldBusinessId, oldDeviceId],
       );

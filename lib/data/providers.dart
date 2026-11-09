@@ -1,6 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'database.dart';
+import 'records.dart';
+import 'repositories/business_repository.dart';
 import 'repositories/document_repository.dart';
 import 'repositories/party_repository.dart';
 import 'repositories/product_repository.dart';
@@ -106,4 +108,19 @@ final currentBusinessStreamProvider = StreamProvider<Business?>((ref) {
   final db = ref.watch(databaseProvider);
   final businessId = ref.watch(currentBusinessIdProvider);
   return (db.select(db.businesses)..where((tbl) => tbl.id.equals(businessId))).watchSingleOrNull();
+});
+
+final recordsRepositoryProvider = Provider<RecordsRepository>((ref) {
+  final db = ref.watch(databaseProvider);
+  final businessId = ref.watch(currentBusinessIdProvider);
+  final deviceId = ref.watch(currentDeviceIdProvider);
+  return RecordsRepository(db, businessId, deviceId);
+});
+
+final businessRepositoryProvider = Provider<BusinessRepository>((ref) {
+  return BusinessRepository(
+    ref.watch(databaseProvider),
+    ref.watch(recordsRepositoryProvider),
+    ref.watch(productRepositoryProvider),
+  );
 });

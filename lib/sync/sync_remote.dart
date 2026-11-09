@@ -37,3 +37,9 @@ abstract class SyncRemoteExtras {
   /// (opening stock).
   Future<void> insertStockMovement(Map<String, dynamic> stockMovement);
 }
+
+/// Generic record store (suppliers, purchases, expenses ...). Separate
+/// interface so existing fakes keep compiling.
+abstract class SyncRemoteRecords {
+  Future<void> upsertRecord(Map<String, dynamic> record);
+}

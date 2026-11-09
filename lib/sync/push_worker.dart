@@ -6,6 +6,7 @@ import 'package:drift/drift.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../data/database.dart';
+import '../data/records.dart';
 import 'sync_remote.dart';
 
 class PushWorker {
@@ -301,6 +302,19 @@ class PushWorker {
           throw UnimplementedError('This remote cannot push standalone stock movements');
         }
         await stockRemote.insertStockMovement(_smMap(movement));
+        break;
+
+      case 'push_record':
+        final recordId = payload['record_id'] as String;
+        final rec = await RecordsRepository.payloadFor(db, recordId);
+        if (rec == null) {
+          throw StateError('Record $recordId not found for push_record');
+        }
+        final Object recRemote = remote;
+        if (recRemote is! SyncRemoteRecords) {
+          throw UnimplementedError('This remote cannot push records');
+        }
+        await recRemote.upsertRecord(rec);
         break;
 
       default:

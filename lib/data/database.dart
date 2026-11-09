@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:drift/drift.dart';
+import 'records.dart';
 import 'package:drift_flutter/drift_flutter.dart';
 import 'package:uuid/uuid.dart';
 
@@ -513,6 +514,8 @@ class AppDatabase extends _$AppDatabase {
       },
       beforeOpen: (details) async {
         await customStatement('PRAGMA foreign_keys = ON;');
+        await customStatement(kCreateAppRecordsSql);
+        await customStatement(kCreateAppRecordsIndexSql);
         await ensureBootstrapData();
       },
     );

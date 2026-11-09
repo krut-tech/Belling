@@ -2,7 +2,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'pull_service.dart';
 import 'sync_remote.dart';
 
-class SupabaseSyncRemote implements SyncRemote, SyncRemoteExtras, PullRemote {
+class SupabaseSyncRemote implements SyncRemote, SyncRemoteExtras, SyncRemoteRecords, PullRemote {
   final SupabaseClient client;
 
   SupabaseSyncRemote(this.client);
@@ -43,6 +43,13 @@ class SupabaseSyncRemote implements SyncRemote, SyncRemoteExtras, PullRemote {
         await _upsertMutableRowRaw('parties', party);
       }
       await client.from('payments').upsert(payment, onConflict: 'id', ignoreDuplicates: true);
+    });
+  }
+
+  @override
+  Future<void> upsertRecord(Map<String, dynamic> record) async {
+    await _withAuthRetry(() async {
+      await client.from('app_records').upsert(record, onConflict: 'id');
     });
   }
 
