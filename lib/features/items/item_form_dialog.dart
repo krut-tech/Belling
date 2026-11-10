@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Text;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/money.dart';
@@ -6,6 +6,7 @@ import '../../data/providers.dart';
 import '../../data/repositories/product_repository.dart';
 import '../../l10n/app_localizations.dart';
 import 'barcode_scanner_dialog.dart';
+import '../../core/tr_text.dart';
 
 class ItemFormDialog extends ConsumerStatefulWidget {
   final ProductWithStock? item;

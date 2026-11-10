@@ -1,10 +1,12 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Text;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/money.dart';
 import '../../data/providers.dart';
 import '../../data/repositories/business_repository.dart';
+import '../../core/tr_text.dart';
+import '../../core/tr.dart';
 
 final supplierSummariesProvider = FutureProvider.autoDispose<List<SupplierSummary>>(
   (ref) => ref.watch(businessRepositoryProvider).supplierSummaries(),
@@ -21,10 +23,10 @@ class SuppliersPage extends ConsumerWidget {
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Naya supplier'),
+        title: Text('Naya supplier'),
         content: SingleChildScrollView(
           child: Column(mainAxisSize: MainAxisSize.min, children: [
-            TextField(controller: name, autofocus: true, decoration: const InputDecoration(labelText: 'Naam')),
+            TextField(controller: name, autofocus: true, decoration: InputDecoration(labelText: tr(context, 'Naam'))),
             TextField(controller: phone, keyboardType: TextInputType.phone, decoration: const InputDecoration(labelText: 'Phone (optional)')),
             TextField(controller: gstin, textCapitalization: TextCapitalization.characters, decoration: const InputDecoration(labelText: 'GSTIN (optional)')),
           ]),
@@ -74,8 +76,8 @@ class SuppliersPage extends ConsumerWidget {
     final async = ref.watch(supplierSummariesProvider);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Supplier & purchase'),
-        actions: [IconButton(tooltip: 'Naya supplier', icon: const Icon(Icons.person_add_alt), onPressed: () => _addSupplier(context, ref))],
+        title: Text('Supplier & purchase'),
+        actions: [IconButton(tooltip: tr(context, 'Naya supplier'), icon: Icon(Icons.person_add_alt), onPressed: () => _addSupplier(context, ref))],
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () async {

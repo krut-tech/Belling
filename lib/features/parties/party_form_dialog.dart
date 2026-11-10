@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Text;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/gst_states.dart';
@@ -6,6 +6,7 @@ import '../../core/money.dart';
 import '../../data/database.dart';
 import '../../data/providers.dart';
 import '../../l10n/app_localizations.dart';
+import '../../core/tr_text.dart';
 
 class PartyFormDialog extends ConsumerStatefulWidget {
   final Party? party;

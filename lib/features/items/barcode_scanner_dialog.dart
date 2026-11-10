@@ -1,8 +1,9 @@
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Text;
 import 'package:flutter/services.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import '../../l10n/app_localizations.dart';
+import '../../core/tr_text.dart';
 
 /// EAN-13 / EAN-8 / UPC-A carry a check digit. A camera frame that is blurry or
 /// at an angle can decode to a wrong number with the wrong check digit; such a

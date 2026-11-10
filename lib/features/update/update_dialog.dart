@@ -1,12 +1,13 @@
 import 'dart:io';
 
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Text;
 import 'package:open_filex/open_filex.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/app_update.dart';
+import '../../core/tr_text.dart';
 
 /// Checks GitHub for a newer release. Returns it only when newer than the
 /// installed app; null otherwise (up to date, offline, no release).

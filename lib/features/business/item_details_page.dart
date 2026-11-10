@@ -1,10 +1,12 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Text;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/money.dart';
 import '../../data/providers.dart';
 import '../../data/records.dart';
 import '../../data/repositories/product_repository.dart';
+import '../../core/tr_text.dart';
+import '../../core/tr.dart';
 
 final _itemMetasProvider = FutureProvider.autoDispose<Map<String, AppRecord>>(
   (ref) => ref.watch(businessRepositoryProvider).itemMetas(),
@@ -56,12 +58,12 @@ class _ItemDetailsPageState extends ConsumerState<ItemDetailsPage> {
     final categories = {for (final m in metas.values) if (m.str('category').isNotEmpty) m.str('category')}.toList()..sort();
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Item details (category, unit, MRP)')),
+      appBar: AppBar(title: Text('Item details (category, unit, MRP)')),
       body: Column(children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
+          padding: EdgeInsets.fromLTRB(12, 8, 12, 4),
           child: TextField(
-            decoration: const InputDecoration(prefixIcon: Icon(Icons.search), hintText: 'Item dhundo'),
+            decoration: InputDecoration(prefixIcon: Icon(Icons.search), hintText: tr(context, 'Item dhundo')),
             onChanged: (v) => setState(() => _q = v),
           ),
         ),

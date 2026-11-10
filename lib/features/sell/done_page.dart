@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Text;
 import '../../core/widgets/motion.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -10,6 +10,7 @@ import '../../data/repositories/document_repository.dart';
 import '../../l10n/app_localizations.dart';
 import 'gst_json_export.dart';
 import 'return_dialog.dart';
+import '../../core/tr_text.dart';
 
 class DonePage extends ConsumerStatefulWidget {
   final String documentId;

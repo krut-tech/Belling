@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Text;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
@@ -9,6 +9,8 @@ import 'package:share_plus/share_plus.dart';
 import '../../core/einvoice.dart';
 import '../../data/database.dart';
 import '../../data/providers.dart';
+import '../../core/tr_text.dart';
+import '../../core/tr.dart';
 
 Future<void> _shareJson(BuildContext context, String name, Object json) async {
   final dir = await getTemporaryDirectory();
@@ -62,10 +64,10 @@ Future<void> exportEwayBill(BuildContext context, WidgetRef ref, Document doc) a
   final ok = await showDialog<bool>(
     context: context,
     builder: (ctx) => AlertDialog(
-      title: const Text('E-way bill JSON'),
+      title: Text('E-way bill JSON'),
       content: Column(mainAxisSize: MainAxisSize.min, children: [
-        TextField(controller: dist, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Distance (km)')),
-        TextField(controller: veh, textCapitalization: TextCapitalization.characters, decoration: const InputDecoration(labelText: 'Gaadi number (MH12AB1234)')),
+        TextField(controller: dist, keyboardType: TextInputType.number, decoration: InputDecoration(labelText: tr(context, 'Distance (km)'))),
+        TextField(controller: veh, textCapitalization: TextCapitalization.characters, decoration: InputDecoration(labelText: tr(context, 'Gaadi number (MH12AB1234)'))),
         const SizedBox(height: 8),
         const Text('File ewaybillgst.gov.in > Bulk generate mein upload karo.', style: TextStyle(fontSize: 12)),
       ]),

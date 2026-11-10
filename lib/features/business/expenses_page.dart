@@ -1,9 +1,10 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Text;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/money.dart';
 import '../../data/providers.dart';
 import '../../data/records.dart';
+import '../../core/tr_text.dart';
 
 final expensesProvider = FutureProvider.autoDispose<List<AppRecord>>(
   (ref) => ref.watch(businessRepositoryProvider).expenses(),

@@ -2,13 +2,14 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Text;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../core/items_import.dart';
 import '../../data/providers.dart';
+import '../../core/tr_text.dart';
 
 /// "Import items from CSV/Excel": pick a file, review, import. Skips rows that
 /// are wrong or whose barcode already exists and tells exactly why.

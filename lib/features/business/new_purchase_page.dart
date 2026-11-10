@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Text;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/money.dart';
@@ -6,6 +6,8 @@ import '../../data/providers.dart';
 import '../../data/records.dart';
 import '../../data/repositories/business_repository.dart';
 import 'pick_product.dart';
+import '../../core/tr_text.dart';
+import '../../core/tr.dart';
 
 /// Record a purchase bill: stock goes up, cost price updates, supplier due is tracked.
 class NewPurchasePage extends ConsumerStatefulWidget {
@@ -43,8 +45,8 @@ class _NewPurchasePageState extends ConsumerState<NewPurchasePage> {
       builder: (ctx) => AlertDialog(
         title: Text(p.product.name),
         content: Column(mainAxisSize: MainAxisSize.min, children: [
-          TextField(controller: qty, autofocus: true, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: const InputDecoration(labelText: 'Quantity')),
-          TextField(controller: cost, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: const InputDecoration(labelText: 'Kharid rate per unit (₹)')),
+          TextField(controller: qty, autofocus: true, keyboardType: TextInputType.numberWithOptions(decimal: true), decoration: InputDecoration(labelText: 'Quantity')),
+          TextField(controller: cost, keyboardType: TextInputType.numberWithOptions(decimal: true), decoration: InputDecoration(labelText: tr(context, 'Kharid rate per unit (₹)'))),
         ]),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
@@ -131,11 +133,11 @@ class _NewPurchasePageState extends ConsumerState<NewPurchasePage> {
             const Text('Total', style: TextStyle(fontWeight: FontWeight.w700)),
             Text(formatRupees(_total), style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800)),
           ]),
-          const SizedBox(height: 10),
+          SizedBox(height: 10),
           TextField(
             controller: _paid,
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            decoration: InputDecoration(labelText: 'Abhi kitna diya (₹)', helperText: 'Khali chhodo = poora ${formatRupees(_total)} diya'),
+            keyboardType: TextInputType.numberWithOptions(decimal: true),
+            decoration: InputDecoration(labelText: tr(context, 'Abhi kitna diya (₹)'), helperText: 'Khali chhodo = poora ${formatRupees(_total)} diya'),
           ),
           const SizedBox(height: 20),
           FilledButton(

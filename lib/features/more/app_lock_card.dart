@@ -1,9 +1,10 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Text;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/app_lock.dart';
 import '../../data/providers.dart';
 import 'app_lock_gate.dart';
+import '../../core/tr_text.dart';
 
 /// More > App lock: set, change or remove the PIN.
 class AppLockCard extends ConsumerStatefulWidget {

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Text;
 import '../../core/widgets/motion.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -12,6 +12,7 @@ import '../../l10n/app_localizations.dart';
 import 'dues_reminder_sheet.dart';
 import 'party_form_dialog.dart';
 import 'receive_payment_dialog.dart';
+import '../../core/tr_text.dart';
 
 class PartyDetailPage extends ConsumerWidget {
   final String partyId;

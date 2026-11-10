@@ -1,11 +1,12 @@
 import 'package:drift/drift.dart' show Value;
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Text;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../data/database.dart';
 import '../data/providers.dart';
 import 'sync_providers.dart';
+import '../core/tr_text.dart';
 
 class SyncChip extends ConsumerWidget {
   const SyncChip({super.key});
@@ -116,6 +117,26 @@ class SyncChip extends ConsumerWidget {
             ),
           ),
           actions: [
+            TextButton(
+              onPressed: () async {
+                final messenger = ScaffoldMessenger.of(context);
+                final nav = Navigator.of(context);
+                try {
+                  await ref.read(authSyncServiceProvider).fixBusinessMismatch();
+                  try {
+                    ref.read(pushWorkerProvider).triggerPush();
+                    ref.read(pullWorkerProvider).pullSoon();
+                  } catch (e) {
+                    debugPrint('Sync trigger failed: $e');
+                  }
+                  nav.pop();
+                  messenger.showSnackBar(const SnackBar(content: Text('Theek kar diya. Sync dobara chal raha hai.')));
+                } catch (e) {
+                  messenger.showSnackBar(SnackBar(content: Text('Auto fix nahi hua: $e')));
+                }
+              },
+              child: const Text('Auto fix'),
+            ),
             TextButton(
               onPressed: () async {
                 // Put the rejected commands back in the queue (e.g. after a

@@ -1,5 +1,5 @@
 import 'package:drift/drift.dart' show OrderingTerm;
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Text;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
@@ -7,6 +7,7 @@ import '../../core/money.dart';
 import '../../data/database.dart';
 import '../../data/providers.dart';
 import '../../l10n/app_localizations.dart';
+import '../../core/tr_text.dart';
 
 class ReceivePaymentDialog extends ConsumerStatefulWidget {
   final Party party;

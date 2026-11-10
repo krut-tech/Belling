@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Text;
 import '../../core/widgets/motion.dart';
 import 'stock_adjust_dialog.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -7,6 +7,8 @@ import '../../core/money.dart';
 import '../../data/providers.dart';
 import '../../l10n/app_localizations.dart';
 import 'item_form_dialog.dart';
+import '../../core/tr_text.dart';
+import '../../core/tr.dart';
 
 class ItemsPage extends ConsumerStatefulWidget {
   const ItemsPage({super.key});
@@ -43,11 +45,11 @@ class _ItemsPageState extends ConsumerState<ItemsPage> {
               controller: _searchController,
               decoration: InputDecoration(
                 hintText: l10n.searchItems,
-                prefixIcon: const Icon(Icons.search),
+                prefixIcon: Icon(Icons.search),
                 suffixIcon: _searchQuery.isNotEmpty
                     ? IconButton(
-                        constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
-                        tooltip: 'Clear',
+                        constraints: BoxConstraints(minWidth: 48, minHeight: 48),
+                        tooltip: tr(context, 'Clear'),
                         icon: const Icon(Icons.clear),
                         onPressed: () {
                           _searchController.clear();
@@ -97,7 +99,7 @@ class _ItemsPageState extends ConsumerState<ItemsPage> {
                       minVerticalPadding: 12, // Ensure touch height >= 48px
                       trailing: p.trackStock
                           ? IconButton(
-                              tooltip: 'Stock add karo',
+                              tooltip: tr(context, 'Stock add karo'),
                               icon: const Icon(Icons.add_box_outlined),
                               onPressed: () => showStockAdjustDialog(context, ref, item),
                             )

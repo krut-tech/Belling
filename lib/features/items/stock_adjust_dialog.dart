@@ -1,9 +1,10 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Text;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/money.dart';
 import '../../data/providers.dart';
 import '../../data/repositories/product_repository.dart';
+import '../../core/tr_text.dart';
 
 /// "Stock add karo" dialog: add purchased stock or remove damaged / lost stock.
 Future<void> showStockAdjustDialog(BuildContext context, WidgetRef ref, ProductWithStock item) {

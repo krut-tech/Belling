@@ -1,6 +1,6 @@
 import 'package:qr_flutter/qr_flutter.dart';
 import '../../core/invoice_pdf.dart' show buildUpiQrUri;
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Text;
 import '../../core/widgets/motion.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -15,6 +15,8 @@ import '../items/barcode_scanner_dialog.dart';
 import '../items/item_form_dialog.dart';
 import '../parties/party_form_dialog.dart';
 import 'new_bill_notifier.dart';
+import '../../core/tr_text.dart';
+import '../../core/tr.dart';
 
 class NewBillPage extends ConsumerStatefulWidget {
   const NewBillPage({super.key});
@@ -253,16 +255,16 @@ class _NewBillPageState extends ConsumerState<NewBillPage> {
         actions: [
           if (billState.lines.isNotEmpty)
             IconButton(
-              constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
-              icon: const Icon(Icons.percent),
-              tooltip: 'Poore bill par discount',
+              constraints: BoxConstraints(minWidth: 48, minHeight: 48),
+              icon: Icon(Icons.percent),
+              tooltip: tr(context, 'Poore bill par discount'),
               onPressed: _showBillDiscountDialog,
             ),
           if (billState.lines.isNotEmpty)
             IconButton(
-              constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
-              icon: const Icon(Icons.request_quote_outlined),
-              tooltip: 'Estimate save karo',
+              constraints: BoxConstraints(minWidth: 48, minHeight: 48),
+              icon: Icon(Icons.request_quote_outlined),
+              tooltip: tr(context, 'Estimate save karo'),
               onPressed: () async {
                 final ok = await ref.read(newBillProvider.notifier).saveAsEstimate();
                 if (!context.mounted) return;
@@ -295,11 +297,11 @@ class _NewBillPageState extends ConsumerState<NewBillPage> {
                     focusNode: _searchFocusNode,
                     decoration: InputDecoration(
                       hintText: l10n.searchOrScan,
-                      prefixIcon: const Icon(Icons.search),
-                      border: const OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.search),
+                      border: OutlineInputBorder(),
                       suffixIcon: _searchQuery.isNotEmpty
                           ? IconButton(
-                              tooltip: 'Clear',
+                              tooltip: tr(context, 'Clear'),
                               icon: const Icon(Icons.clear),
                               onPressed: () {
                                 _searchController.clear();
@@ -492,8 +494,8 @@ class _NewBillPageState extends ConsumerState<NewBillPage> {
                                       ),
                                     ),
                                     IconButton(
-                                      constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
-                                      tooltip: 'Quantity kam karo',
+                                      constraints: BoxConstraints(minWidth: 44, minHeight: 44),
+                                      tooltip: tr(context, 'Quantity kam karo'),
                                       icon: const Icon(Icons.remove_circle_outline),
                                       onPressed: () {
                                         final newQty = line.qtyMilli - 1000;

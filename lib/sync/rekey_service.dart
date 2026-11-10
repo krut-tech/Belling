@@ -189,4 +189,79 @@ class RekeyService {
 
     return RekeyResult(newBusinessId: newBusinessId, newDeviceId: newDeviceId);
   }
+
+  /// Moves everything on this phone (bills, items, parties, queued sync
+  /// commands) under [newBusinessId] -- the business that already exists for
+  /// this account on the server -- WITHOUT deleting anything. Rejected commands
+  /// go back to "pending" so they sync now. Used when the phone's business id
+  /// differs from the account's business (e.g. bills made before signing in).
+  Future<void> mergeIntoBusiness(String newBusinessId) async {
+    final bus = await (db.select(db.businesses)..limit(1)).getSingleOrNull();
+    if (bus == null) throw StateError('Local business missing');
+    final oldId = bus.id;
+    if (oldId == newBusinessId) return;
+    final nowEpoch = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+
+    await db.transaction(() async {
+      await db.customStatement('PRAGMA defer_foreign_keys = ON;');
+      await db.dropTriggers();
+
+      await db.customStatement(
+        'UPDATE businesses SET id = ?, business_id = ?, updated_at = ? WHERE id = ?;',
+        [newBusinessId, newBusinessId, nowEpoch, oldId],
+      );
+      await db.customStatement('UPDATE devices SET business_id = ? WHERE business_id = ?;', [newBusinessId, oldId]);
+      await db.customStatement(
+        'UPDATE parties SET business_id = ?, updated_at = ? WHERE business_id = ?;',
+        [newBusinessId, nowEpoch, oldId],
+      );
+      await db.customStatement(
+        'UPDATE products SET business_id = ?, updated_at = ? WHERE business_id = ?;',
+        [newBusinessId, nowEpoch, oldId],
+      );
+      await db.customStatement('UPDATE document_series SET business_id = ? WHERE business_id = ?;', [newBusinessId, oldId]);
+      await db.customStatement('UPDATE documents SET business_id = ? WHERE business_id = ?;', [newBusinessId, oldId]);
+
+      final docs = await db.select(db.documents).get();
+      for (final doc in docs) {
+        if (doc.snapshotJson.contains(oldId)) {
+          await (db.update(db.documents)..where((t) => t.id.equals(doc.id))).write(
+            DocumentsCompanion(snapshotJson: Value(doc.snapshotJson.replaceAll(oldId, newBusinessId))),
+          );
+        }
+      }
+
+      await db.customStatement('UPDATE document_lines SET business_id = ? WHERE business_id = ?;', [newBusinessId, oldId]);
+      await db.customStatement('UPDATE payments SET business_id = ? WHERE business_id = ?;', [newBusinessId, oldId]);
+      await db.customStatement('UPDATE stock_movements SET business_id = ? WHERE business_id = ?;', [newBusinessId, oldId]);
+      await db.customStatement('UPDATE app_records SET business_id = ? WHERE business_id = ?;', [newBusinessId, oldId]);
+      await db.customStatement('UPDATE draft_carts SET business_id = ? WHERE business_id = ?;', [newBusinessId, oldId]);
+      await db.customStatement('UPDATE outbox_commands SET business_id = ? WHERE business_id = ?;', [newBusinessId, oldId]);
+
+      final outboxRows = await db.select(db.outboxCommands).get();
+      for (final cmd in outboxRows) {
+        if (cmd.payloadJson.contains(oldId)) {
+          await (db.update(db.outboxCommands)..where((t) => t.id.equals(cmd.id))).write(
+            OutboxCommandsCompanion(payloadJson: Value(cmd.payloadJson.replaceAll(oldId, newBusinessId))),
+          );
+        }
+      }
+
+      // Everything the server refused only because of the id mismatch can go again.
+      await (db.update(db.outboxCommands)..where((t) => t.status.equals('rejected'))).write(
+        const OutboxCommandsCompanion(status: Value('pending'), lastError: Value(null)),
+      );
+
+      await db.createTriggers();
+
+      // Make sure the server business gets this phone's shop name / GST / UPI.
+      final updatedBus = await (db.select(db.businesses)..where((t) => t.id.equals(newBusinessId))).getSingle();
+      await db.enqueueOutboxCommand(
+        businessId: newBusinessId,
+        deviceId: (await (db.select(db.devices)..limit(1)).getSingle()).id,
+        commandType: 'upsert_business',
+        payload: businessToPayload(updatedBus),
+      );
+    });
+  }
 }

@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Text;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
@@ -13,6 +13,7 @@ import '../../core/invoice_style.dart';
 import '../../core/money.dart';
 import '../../data/providers.dart';
 import '../../data/repositories/dues_repository.dart';
+import '../../core/tr_text.dart';
 
 /// One-tap payment reminder for a customer with unpaid bills: shows every open
 /// bill (items, paid, due), the total, and a UPI QR for exactly that amount,

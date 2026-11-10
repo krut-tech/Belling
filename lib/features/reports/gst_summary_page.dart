@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Text;
 import '../../core/widgets/motion.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -8,6 +8,8 @@ import '../../l10n/app_localizations.dart';
 import 'csv_export_service.dart';
 import 'reports_providers.dart';
 import 'reports_repository.dart';
+import '../../core/tr_text.dart';
+import '../../core/tr.dart';
 
 class GstSummaryPage extends ConsumerWidget {
   const GstSummaryPage({super.key});
@@ -29,8 +31,8 @@ class GstSummaryPage extends ConsumerWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   IconButton(
-                    icon: const Icon(Icons.description_outlined),
-                    tooltip: 'GSTR-1 export (CA ke liye)',
+                    icon: Icon(Icons.description_outlined),
+                    tooltip: tr(context, 'GSTR-1 export (CA ke liye)'),
                     constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
                     onPressed: () async {
                       final db = ref.read(databaseProvider);

@@ -1,10 +1,11 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Text;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/money.dart';
 import '../../core/reminder_service.dart';
 import '../../data/providers.dart';
 import '../parties/dues_reminder_sheet.dart';
+import '../../core/tr_text.dart';
 
 /// Everyone who owes money, biggest first, one tap to send the PDF reminder.
 class RemindersPage extends ConsumerWidget {

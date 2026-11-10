@@ -1,10 +1,11 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Text;
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/app_lock.dart';
 import '../../core/theme/app_colors.dart';
 import '../../data/providers.dart';
+import '../../core/tr_text.dart';
 
 /// Bumped after the PIN is set/changed/removed so the gate re-reads it.
 final appLockVersionProvider = StateProvider<int>((ref) => 0);

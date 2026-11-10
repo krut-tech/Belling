@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:file_picker/file_picker.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Text;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pdf/pdf.dart' show PdfPageFormat;
 import 'package:printing/printing.dart' show PdfPreview;
@@ -11,6 +11,7 @@ import '../../core/invoice_pdf.dart';
 import '../../core/invoice_style.dart';
 import '../../data/database.dart';
 import '../../data/providers.dart';
+import '../../core/tr_text.dart';
 
 /// Lets each business shape how its bills look when printed or shared:
 /// paper size, layout, colours, logo and its own stationary / letterhead.

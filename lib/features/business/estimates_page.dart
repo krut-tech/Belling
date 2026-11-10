@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Text;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -6,6 +6,7 @@ import '../../core/money.dart';
 import '../../data/providers.dart';
 import '../../data/records.dart';
 import '../sell/new_bill_notifier.dart';
+import '../../core/tr_text.dart';
 
 final estimatesProvider = FutureProvider.autoDispose<List<AppRecord>>(
   (ref) => ref.watch(recordsRepositoryProvider).list(RecordKinds.estimate),

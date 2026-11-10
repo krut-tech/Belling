@@ -1,8 +1,10 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Text;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../data/providers.dart';
+import '../../core/tr_text.dart';
+import '../../core/tr.dart';
 
 const _roleLabels = {
   'owner': 'Owner (sab kuch)',
@@ -88,9 +90,9 @@ class _StaffPageState extends ConsumerState<StaffPage> {
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setS) => AlertDialog(
-          title: const Text('Staff add karo'),
+          title: Text('Staff add karo'),
           content: Column(mainAxisSize: MainAxisSize.min, children: [
-            TextField(controller: email, autofocus: true, keyboardType: TextInputType.emailAddress, decoration: const InputDecoration(labelText: 'Unka email')),
+            TextField(controller: email, autofocus: true, keyboardType: TextInputType.emailAddress, decoration: InputDecoration(labelText: tr(context, 'Unka email'))),
             const SizedBox(height: 8),
             DropdownButtonFormField<String>(
               initialValue: role,

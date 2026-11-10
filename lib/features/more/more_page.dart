@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:file_picker/file_picker.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Text;
 import '../../core/widgets/motion.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -16,6 +16,7 @@ import '../items/items_import_card.dart';
 import 'app_lock_card.dart';
 import '../update/update_dialog.dart';
 import 'backup_restore_service.dart';
+import '../../core/tr_text.dart';
 
 class MorePage extends ConsumerWidget {
   const MorePage({super.key});

@@ -146,6 +146,12 @@ class AuthSyncService {
               unsynced.isEmpty &&
               !hasLocalProducts &&
               !hasLocalParties;
+          if (!canAdopt && await _serverHasNoDocuments(client, serverBusId)) {
+            // The account's business is empty: keep this phone's data and
+            // simply attach it to that business (nothing is deleted).
+            await mergeLocalIntoServer(serverBus);
+            return null;
+          }
           return ExistingBusinessChoice(serverBusiness: serverBus, canAdopt: canAdopt);
         }
       }
@@ -172,6 +178,62 @@ class AuthSyncService {
 
     await registerDeviceAndAssignPrefix(localBus.id, rekeyResult.newDeviceId);
     return null;
+  }
+
+  Future<bool> _serverHasNoDocuments(SupabaseClient client, String businessId) async {
+    try {
+      final rows = await client.from('documents').select('id').eq('business_id', businessId).limit(1);
+      return (rows as List).isEmpty;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Keeps all local data and attaches it to the account's existing business.
+  Future<void> mergeLocalIntoServer(Map<String, dynamic> serverBusiness) async {
+    final serverBusId = serverBusiness['id'] as String;
+    await rekeyService.mergeIntoBusiness(serverBusId);
+    final dev = await (db.select(db.devices)..limit(1)).getSingleOrNull();
+    if (dev == null) throw StateError('Device not found');
+    await registerDeviceAndAssignPrefix(serverBusId, dev.id);
+  }
+
+  /// Fixes "Business does not exist on server" / "row-level security" errors:
+  /// when the phone's business id differs from the account's business, merge.
+  /// Returns true if something was fixed.
+  Future<bool> fixBusinessMismatch() async {
+    final client = supabaseClient;
+    if (client == null || client.auth.currentSession == null) {
+      throw StateError('Pehle sign in karo (More > Backup & Sync)');
+    }
+    final local = await (db.select(db.businesses)..limit(1)).getSingleOrNull();
+    if (local == null) return false;
+    final rows = await client.from('businesses').select().limit(1);
+    if (rows.isEmpty) {
+      // The account has no business yet: create it from this phone's data.
+      await client.rpc('create_business', params: {
+        'p_id': local.id,
+        'p_name': local.name,
+        'p_state_code': local.stateCode,
+        'p_gstin': local.gstin,
+        'p_address': local.address,
+      });
+      final dev = await (db.select(db.devices)..limit(1)).getSingleOrNull();
+      if (dev != null) await registerDeviceAndAssignPrefix(local.id, dev.id);
+      await (db.update(db.outboxCommands)..where((t) => t.status.equals('rejected'))).write(
+        const OutboxCommandsCompanion(status: Value('pending'), lastError: Value(null)),
+      );
+      return true;
+    }
+    final serverBus = Map<String, dynamic>.from(rows.first as Map);
+    if (serverBus['id'] == local.id) {
+      await (db.update(db.outboxCommands)..where((t) => t.status.equals('rejected'))).write(
+        const OutboxCommandsCompanion(status: Value('pending'), lastError: Value(null)),
+      );
+      return true;
+    }
+    await mergeLocalIntoServer(serverBus);
+    return true;
   }
 
   /// Adopts server business when user chooses "Use my existing business".

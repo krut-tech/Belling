@@ -1,9 +1,11 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Text;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/money.dart';
 import '../../data/database.dart';
 import '../../data/providers.dart';
+import '../../core/tr_text.dart';
+import '../../core/tr.dart';
 
 /// Partial sale return: pick how much of each item came back. Returns true if
 /// a credit note was issued.
@@ -49,12 +51,12 @@ Future<bool> showReturnDialog(BuildContext context, WidgetRef ref, Document invo
                     child: TextField(
                       controller: ctrls[l.id],
                       keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                      decoration: const InputDecoration(hintText: '0', isDense: true),
+                      decoration: InputDecoration(hintText: '0', isDense: true),
                     ),
                   ),
                 ]),
               ),
-          TextField(controller: reason, decoration: const InputDecoration(labelText: 'Karan')),
+          TextField(controller: reason, decoration: InputDecoration(labelText: tr(context, 'Karan'))),
         ]),
       ),
       actions: [

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Text;
 import '../../core/widgets/motion.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -6,6 +6,7 @@ import '../../sync/auth_sync_service.dart';
 import '../../sync/profile_sync_service.dart';
 import '../../sync/sync_chip.dart';
 import '../../sync/sync_providers.dart';
+import '../../core/tr_text.dart';
 
 class BackupAndSyncPage extends ConsumerStatefulWidget {
   const BackupAndSyncPage({super.key});
@@ -128,6 +129,23 @@ class _BackupAndSyncPageState extends ConsumerState<BackupAndSyncPage> {
               child: const Text('Cancel'),
             ),
             if (!choice.canAdopt)
+              ElevatedButton(
+                onPressed: () async {
+                  final nav = Navigator.of(ctx);
+                  final messenger = ScaffoldMessenger.of(ctx);
+                  nav.pop();
+                  try {
+                    await authService.mergeLocalIntoServer(choice.serverBusiness);
+                    messenger.showSnackBar(
+                      const SnackBar(content: Text('Done. Aapka sab data (bills, items, parties) account se jud gaya.')),
+                    );
+                  } catch (e) {
+                    messenger.showSnackBar(SnackBar(content: Text('Merge nahi hua: $e')));
+                  }
+                },
+                child: const Text('Data rakho aur jodo (Merge)'),
+              ),
+            if (!choice.canAdopt)
               TextButton(
                 style: TextButton.styleFrom(foregroundColor: Colors.red),
                 onPressed: () async {
@@ -138,8 +156,8 @@ class _BackupAndSyncPageState extends ConsumerState<BackupAndSyncPage> {
                     builder: (c2) => AlertDialog(
                       title: const Text('Is phone ka data hataye?'),
                       content: const Text(
-                        'Is phone ke local bills, items aur parties delete ho jayenge aur aapke account ka business use hoga. '
-                        'Ye wapas nahi hoga. Pehle More mein Backup le lo.',
+                        'WARNING: Is phone ke saare bills, items aur parties DELETE ho jayenge. '
+                        'Ye kabhi wapas nahi aayega. Agar bills rakhne hain to "Nahi" dabao aur "Merge" chuno.',
                       ),
                       actions: [
                         TextButton(onPressed: () => Navigator.pop(c2, false), child: const Text('Nahi')),

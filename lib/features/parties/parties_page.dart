@@ -1,5 +1,5 @@
 import 'dues_reminder_sheet.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Text;
 import '../../core/widgets/motion.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -8,6 +8,8 @@ import '../../core/money.dart';
 import '../../data/providers.dart';
 import '../../l10n/app_localizations.dart';
 import 'party_form_dialog.dart';
+import '../../core/tr_text.dart';
+import '../../core/tr.dart';
 
 class PartiesPage extends ConsumerStatefulWidget {
   const PartiesPage({super.key});
@@ -92,10 +94,10 @@ class _PartiesPageState extends ConsumerState<PartiesPage> {
               controller: _searchController,
               decoration: InputDecoration(
                 hintText: l10n.searchParties,
-                prefixIcon: const Icon(Icons.search),
+                prefixIcon: Icon(Icons.search),
                 suffixIcon: _searchQuery.isNotEmpty
                     ? IconButton(
-                        tooltip: 'Clear',
+                        tooltip: tr(context, 'Clear'),
                         icon: const Icon(Icons.clear),
                         onPressed: () {
                           _searchController.clear();
@@ -170,9 +172,9 @@ class _PartiesPageState extends ConsumerState<PartiesPage> {
                           _buildBalanceBadge(context, l10n, balancePaise),
                           if (balancePaise > 0)
                             IconButton(
-                              constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
-                              icon: const Icon(Icons.notifications_active_outlined),
-                              tooltip: 'Bakaya reminder bhejo',
+                              constraints: BoxConstraints(minWidth: 48, minHeight: 48),
+                              icon: Icon(Icons.notifications_active_outlined),
+                              tooltip: tr(context, 'Bakaya reminder bhejo'),
                               onPressed: () => showDuesReminderSheet(context, partyId: p.id),
                             )
                           else
