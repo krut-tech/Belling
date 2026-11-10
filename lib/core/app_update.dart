@@ -47,21 +47,36 @@ bool isNewerVersion(String latest, String current) {
   return false;
 }
 
+/// CPU type of this phone, read from the Dart runtime string
+/// (e.g. `... on "android_arm64"`). Defaults to 64-bit ARM.
+String detectAbi([String? versionString]) {
+  final v = versionString ?? Platform.version;
+  if (v.contains('android_arm64')) return 'arm64-v8a';
+  if (v.contains('android_arm')) return 'armeabi-v7a';
+  if (v.contains('android_x64')) return 'x86_64';
+  return 'arm64-v8a';
+}
+
 /// Reads the release JSON GitHub returns. Returns null when it has no APK.
-AppRelease? parseRelease(Map<String, dynamic> json) {
+/// Each release carries `belling.apk` (64-bit ARM, almost every phone) and
+/// `belling-armeabi-v7a.apk` (old 32-bit phones). Smaller than one fat APK.
+AppRelease? parseRelease(Map<String, dynamic> json, {String abi = 'arm64-v8a'}) {
   final tag = (json['tag_name'] ?? '').toString();
   if (tag.isEmpty) return null;
   final assets = (json['assets'] as List?) ?? const [];
-  String? apk;
+  final byName = <String, String>{};
+  String? anyApk;
   for (final a in assets) {
     if (a is Map) {
       final name = (a['name'] ?? '').toString().toLowerCase();
-      if (name.endsWith('.apk')) {
-        apk = a['browser_download_url']?.toString();
-        break;
+      final url = a['browser_download_url']?.toString();
+      if (name.endsWith('.apk') && url != null && url.isNotEmpty) {
+        byName[name] = url;
+        anyApk ??= url;
       }
     }
   }
+  final apk = byName['belling-$abi.apk'] ?? byName['belling.apk'] ?? anyApk;
   if (apk == null || apk.isEmpty) return null;
   var version = tag;
   if (version.startsWith('v') || version.startsWith('V')) {
@@ -96,7 +111,7 @@ Future<AppRelease?> fetchLatestRelease({
     final body = await res.transform(utf8.decoder).join().timeout(timeout);
     final json = jsonDecode(body);
     if (json is! Map<String, dynamic>) return null;
-    return parseRelease(json);
+    return parseRelease(json, abi: detectAbi());
   } catch (_) {
     return null;
   } finally {
