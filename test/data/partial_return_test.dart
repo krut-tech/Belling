@@ -38,7 +38,7 @@ void main() {
           isInterState: false,
           payments: paid > 0 ? [PaymentParam(method: 'cash', amountPaise: paid)] : null,
           lines: [
-            IssueDocumentLineParam(productId: 'p1', name: 'Item', hsn: '1101', qtyMilli: 4000, ratePaise: 10000, gstRateBp: 0),
+            const IssueDocumentLineParam(productId: 'p1', name: 'Item', hsn: '1101', qtyMilli: 4000, ratePaise: 10000, gstRateBp: 0),
           ],
         );
 

@@ -81,7 +81,8 @@ class _AutoReminderCardState extends ConsumerState<_AutoReminderCard> {
     final db = ref.read(databaseProvider);
     final on = await ReminderService.instance.isEnabled(db);
     final h = await ReminderService.instance.hour(db);
-    if (mounted) setState(() {
+    if (!mounted) return;
+    setState(() {
       _on = on;
       _hour = h;
       _loaded = true;

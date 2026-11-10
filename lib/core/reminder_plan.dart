@@ -1,4 +1,4 @@
-/// Pure helpers for the daily udhar reminder notification.
+// Pure helpers for the daily udhar reminder notification.
 
 class ReminderText {
   const ReminderText(this.title, this.body);

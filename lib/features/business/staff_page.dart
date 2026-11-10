@@ -93,7 +93,7 @@ class _StaffPageState extends ConsumerState<StaffPage> {
             TextField(controller: email, autofocus: true, keyboardType: TextInputType.emailAddress, decoration: const InputDecoration(labelText: 'Unka email')),
             const SizedBox(height: 8),
             DropdownButtonFormField<String>(
-              value: role,
+              initialValue: role,
               decoration: const InputDecoration(labelText: 'Role'),
               items: [
                 for (final r in const ['manager', 'cashier', 'accountant']) DropdownMenuItem(value: r, child: Text(_roleLabels[r]!)),

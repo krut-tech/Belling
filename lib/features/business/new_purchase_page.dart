@@ -98,7 +98,7 @@ class _NewPurchasePageState extends ConsumerState<NewPurchasePage> {
         padding: const EdgeInsets.all(16),
         children: [
           DropdownButtonFormField<String?>(
-            value: _supplierId,
+            initialValue: _supplierId,
             decoration: const InputDecoration(labelText: 'Supplier'),
             items: [
               const DropdownMenuItem<String?>(value: null, child: Text('Koi nahi / cash purchase')),

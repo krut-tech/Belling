@@ -1,4 +1,4 @@
-/// Pure helpers for the extra business features (no database, easy to test).
+// Pure helpers for the extra business features (no database, easy to test).
 
 /// Splits [totalDiscountPaise] across lines in proportion to each line's
 /// amount; the rounding remainder goes to the last non-empty line. A line is

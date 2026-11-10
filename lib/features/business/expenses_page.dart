@@ -26,7 +26,7 @@ class ExpensesPage extends ConsumerWidget {
           content: SingleChildScrollView(
             child: Column(mainAxisSize: MainAxisSize.min, children: [
               DropdownButtonFormField<String>(
-                value: category,
+                initialValue: category,
                 decoration: const InputDecoration(labelText: 'Category'),
                 items: [for (final c in kExpenseCategories) DropdownMenuItem(value: c, child: Text(c))],
                 onChanged: (v) => setS(() => category = v ?? category),
