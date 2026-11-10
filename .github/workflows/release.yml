@@ -58,7 +58,7 @@ jobs:
           ls -la build/app/outputs/flutter-apk/
           # belling.apk = 64-bit ARM (nearly all phones; also what old app versions download)
           cp build/app/outputs/flutter-apk/app-arm64-v8a-release.apk belling.apk
-          cp build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk belling-armeabi-v7a.apkxx
+          cp build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk belling-armeabi-v7a.apkx
 
       - name: Release notes
         run: |
