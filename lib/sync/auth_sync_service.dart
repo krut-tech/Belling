@@ -128,7 +128,11 @@ class AuthSyncService {
 
     // Check if user already owns a business on server
     try {
-      final existingBusinesses = await client.from('businesses').select().limit(1);
+      // Prefer this phone's own business (a user can belong to several).
+      var existingBusinesses = await client.from('businesses').select().eq('id', localBus.id).limit(1);
+      if (existingBusinesses.isEmpty) {
+        existingBusinesses = await client.from('businesses').select().order('created_at').limit(1);
+      }
       if (existingBusinesses.isNotEmpty) {
         final serverBus = Map<String, dynamic>.from(existingBusinesses.first as Map);
         final serverBusId = serverBus['id'] as String;
@@ -137,8 +141,11 @@ class AuthSyncService {
           // Adopting wipes local data, so refuse if anything local would be lost:
           // issued documents, or any command that has not reached the server.
           final issuedDocs = await (db.select(db.documents)..where((t) => t.status.equals('issued'))).get();
+          // The business/device upserts that rekeying just queued are not user data.
           final unsynced = await (db.select(db.outboxCommands)
-                ..where((t) => t.status.equals('pending') | t.status.equals('rejected')))
+                ..where((t) =>
+                    (t.status.equals('pending') | t.status.equals('rejected')) &
+                    t.commandType.isNotIn(const ['upsert_business', 'upsert_device'])))
               .get();
           final hasLocalProducts = (await (db.select(db.products)..limit(1)).get()).isNotEmpty;
           final hasLocalParties = (await (db.select(db.parties)..limit(1)).get()).isNotEmpty;
@@ -208,7 +215,8 @@ class AuthSyncService {
     }
     final local = await (db.select(db.businesses)..limit(1)).getSingleOrNull();
     if (local == null) return false;
-    final rows = await client.from('businesses').select().limit(1);
+    var rows = await client.from('businesses').select().eq('id', local.id).limit(1);
+    if (rows.isEmpty) rows = await client.from('businesses').select().order('created_at').limit(1);
     if (rows.isEmpty) {
       // The account has no business yet: create it from this phone's data.
       await client.rpc('create_business', params: {
@@ -258,6 +266,8 @@ class AuthSyncService {
       await db.delete(db.outboxCommands).go();
       await db.delete(db.products).go();
       await db.delete(db.parties).go();
+      await db.customStatement('DELETE FROM app_records;');
+      await db.delete(db.syncStateTable).go(); // pull cursors belong to the old business
 
       // Replace business record
       await db.delete(db.businesses).go();

@@ -79,7 +79,12 @@ class PullService {
           await db.transaction(() async {
             await db.customStatement('PRAGMA defer_foreign_keys = ON;');
             for (final row in rows) {
-              await _apply(table, row);
+              try {
+                await _apply(table, row);
+              } catch (e) {
+                // One malformed row must not block every later row and table.
+                debugPrint('pull: skipped $table ${row['id']}: $e');
+              }
               final seq = _int(row['server_seq']);
               if (seq > maxSeq) maxSeq = seq;
               applied++;

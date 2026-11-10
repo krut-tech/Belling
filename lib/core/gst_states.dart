@@ -52,3 +52,8 @@ String getGstStateName(String code) {
   );
   return '${state.name} (${state.code})';
 }
+
+final RegExp _gstinPattern = RegExp(r'^(0[1-9]|[1-2][0-9]|3[0-9])[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$');
+
+/// True when [gstin] has the official 15-character GSTIN layout.
+bool isValidGstinFormat(String gstin) => _gstinPattern.hasMatch(gstin.trim().toUpperCase());

@@ -75,8 +75,11 @@ class _PartyFormDialogState extends ConsumerState<PartyFormDialog> {
         id: widget.party?.id,
         name: _nameController.text.trim(),
         phone: _phoneController.text.trim(),
-        gstin: _gstinController.text.trim().isEmpty ? null : _gstinController.text.trim(),
-        stateCode: _stateCode,
+        gstin: _gstinController.text.trim().isEmpty ? null : _gstinController.text.trim().toUpperCase(),
+        // A valid GSTIN decides the state (and so IGST vs CGST+SGST).
+        stateCode: (isValidGstinFormat(_gstinController.text) && kGstStates.any((e) => e.code == _gstinController.text.trim().substring(0, 2)))
+            ? _gstinController.text.trim().substring(0, 2)
+            : _stateCode,
         creditLimitPaise: creditLimitPaise < 0 ? 0 : creditLimitPaise,
       );
 
@@ -141,6 +144,11 @@ class _PartyFormDialogState extends ConsumerState<PartyFormDialog> {
                     labelText: l10n.gstin,
                     border: const OutlineInputBorder(),
                   ),
+                  validator: (v) {
+                    final t = (v ?? '').trim();
+                    if (t.isEmpty || isValidGstinFormat(t)) return null;
+                    return 'GSTIN galat hai (15 characters, jaise 24ABCDE1234F1Z5)';
+                  },
                 ),
                 const SizedBox(height: 16),
                 TextFormField(

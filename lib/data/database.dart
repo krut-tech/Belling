@@ -703,6 +703,17 @@ class AppDatabase extends _$AppDatabase {
         map.putIfAbsent('balance_paise', () => balancePaise);
         map.putIfAbsent('number', () => documentNumber);
         map.putIfAbsent('doc_type', () => docType);
+        map.putIfAbsent('issued_at', () => (issuedAt ?? now).toIso8601String());
+        // Credit notes (cancel / return) need the amounts for their PDF and GST export.
+        map.putIfAbsent('tax_breakup', () => {
+              'taxable_paise': taxResult.taxablePaise,
+              'cgst_paise': taxResult.cgstPaise,
+              'sgst_paise': taxResult.sgstPaise,
+              'igst_paise': taxResult.igstPaise,
+              'total_before_round_off_paise': taxResult.totalBeforeRoundOffPaise,
+              'round_off_paise': taxResult.roundOffPaise,
+              'total_paise': taxResult.totalPaise,
+            });
         snapshotJsonStr = jsonEncode(map);
       } else {
         final seller = await (select(businesses)..where(
@@ -873,6 +884,13 @@ class AppDatabase extends _$AppDatabase {
         throw StateError('Only invoices can be cancelled');
       }
 
+      final earlierCredits = await (select(documents)
+            ..where((t) => t.refDocumentId.equals(documentId) & t.docType.equals('credit_note')))
+          .get();
+      if (earlierCredits.isNotEmpty) {
+        throw StateError('Is bill ka kuch maal pehle hi return ho chuka hai. Bacha hua maal "Return" se wapas lo.');
+      }
+
       final origLines = await (select(documentLines)..where((tbl) => tbl.documentId.equals(documentId))).get();
       final origPayments = await (select(payments)..where((tbl) => tbl.documentId.equals(documentId))).get();
 
@@ -887,7 +905,8 @@ class AppDatabase extends _$AppDatabase {
         payload: {'document_id': documentId},
       );
 
-      final fy = getFinancialYear(origDoc.issuedAt);
+      // The credit note is issued today, so it belongs to today's financial year series.
+      final fy = getFinancialYear(DateTime.now());
 
       final seller = await (select(businesses)..where((tbl) => tbl.id.equals(businessId))).getSingleOrNull();
       if (seller == null) {
@@ -1082,7 +1101,7 @@ class AppDatabase extends _$AppDatabase {
         businessId: businessId,
         deviceId: deviceId,
         docType: 'credit_note',
-        financialYear: getFinancialYear(origDoc.issuedAt),
+        financialYear: getFinancialYear(DateTime.now()),
         partyId: origDoc.partyId,
         lines: cnLines,
         isInterState: origDoc.igstPaise != 0,

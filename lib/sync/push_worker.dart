@@ -79,8 +79,19 @@ class PushWorker {
     });
   }
 
+  bool _pushAgain = false;
+
+  /// While true (sign-in, merge, business switch) nothing is pushed, so a
+  /// command is never sent with a business id that is about to change.
+  bool paused = false;
+
   Future<void> pushPending() async {
-    if (_isPushing) return;
+    if (paused) return;
+    if (_isPushing) {
+      // A command was added while a push was running: run once more afterwards.
+      _pushAgain = true;
+      return;
+    }
     // Not signed in: leave everything pending. Pushing without a session would
     // be refused by row level security and wrongly marked as rejected.
     final Object readyCheck = remote;
@@ -130,6 +141,10 @@ class PushWorker {
       }
     } finally {
       _isPushing = false;
+      if (_pushAgain) {
+        _pushAgain = false;
+        unawaited(pushPending());
+      }
     }
   }
 
@@ -141,6 +156,8 @@ class PushWorker {
     if (const {'PGRST000', 'PGRST001', 'PGRST002', 'PGRST003'}.contains(code)) {
       return true;
     }
+    // 429/408 = rate limit / timeout, 40001 serialization failure, 40P01 deadlock.
+    if (const {'429', '408', '40001', '40P01'}.contains(code)) return true;
     return code.startsWith('5') || code.startsWith('08') || code.startsWith('XX');
   }
 
@@ -175,7 +192,12 @@ class PushWorker {
       }
     }
     // A bug in our own data (missing row, bad argument) will never fix itself.
-    if (e is StateError || e is ArgumentError || e is UnimplementedError) {
+    if (e is StateError ||
+        e is ArgumentError ||
+        e is UnimplementedError ||
+        e is FormatException ||
+        e is TypeError ||
+        e is NoSuchMethodError) {
       return true;
     }
     final msg = e.toString().toLowerCase();

@@ -109,7 +109,7 @@ TaxCalculationResult calculateTax({
     }
 
     // 2. Tax = round_half_up(taxable * gst_rate_bp / 10000)
-    final taxPaise = divideRoundHalfUp(taxablePaise * line.gstRateBp, 10000);
+    var taxPaise = divideRoundHalfUp(taxablePaise * line.gstRateBp, 10000);
 
     int cgstPaise = 0;
     int sgstPaise = 0;
@@ -118,8 +118,11 @@ TaxCalculationResult calculateTax({
     if (isInterState) {
       igstPaise = taxPaise;
     } else {
-      cgstPaise = taxPaise ~/ 2;
-      sgstPaise = taxPaise - cgstPaise;
+      // CGST and SGST must be equal halves: round one half, double it.
+      final half = divideRoundHalfUp(taxablePaise * line.gstRateBp, 20000);
+      cgstPaise = half;
+      sgstPaise = half;
+      taxPaise = half * 2;
     }
 
     final lineTotalPaise = taxablePaise + cgstPaise + sgstPaise + igstPaise;

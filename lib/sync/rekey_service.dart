@@ -2,6 +2,7 @@ import 'package:drift/drift.dart';
 import 'package:uuid/uuid.dart';
 
 import '../data/database.dart';
+import 'profile_sync_service.dart';
 
 class RekeyResult {
   final String newBusinessId;
@@ -254,14 +255,20 @@ class RekeyService {
 
       await db.createTriggers();
 
-      // Make sure the server business gets this phone's shop name / GST / UPI.
+      // Pull cursors belong to the old business: start again (pulls are idempotent).
+      await db.delete(db.syncStateTable).go();
+
+      // Send this phone's shop name / GST / UPI to the server business, but never a
+      // blank default profile (that would erase the real profile on the server).
       final updatedBus = await (db.select(db.businesses)..where((t) => t.id.equals(newBusinessId))).getSingle();
-      await db.enqueueOutboxCommand(
-        businessId: newBusinessId,
-        deviceId: (await (db.select(db.devices)..limit(1)).getSingle()).id,
-        commandType: 'upsert_business',
-        payload: businessToPayload(updatedBus),
-      );
+      if (!isDefaultBusinessProfile(name: updatedBus.name, gstin: updatedBus.gstin, upiId: updatedBus.upiId)) {
+        await db.enqueueOutboxCommand(
+          businessId: newBusinessId,
+          deviceId: (await (db.select(db.devices)..limit(1)).getSingle()).id,
+          commandType: 'upsert_business',
+          payload: businessToPayload(updatedBus),
+        );
+      }
     });
   }
 }

@@ -483,7 +483,11 @@ class NewBillNotifier extends StateNotifier<NewBillState> {
         payments: paymentsList,
       );
 
-      await docRepo.clearDraftCart();
+      // The invoice is already saved. A failure while clearing the cart must not
+      // show an error (a retry would issue the same bill twice).
+      try {
+        await docRepo.clearDraftCart();
+      } catch (_) {}
 
       state = NewBillState(isLoaded: true, businessStateCode: state.businessStateCode);
 

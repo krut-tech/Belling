@@ -119,6 +119,14 @@ Future<AppRelease?> fetchLatestRelease({
   }
 }
 
+/// Only https downloads from GitHub are accepted (also after redirects).
+void _checkDownloadUri(Uri uri) {
+  final host = uri.host.toLowerCase();
+  final ok = uri.scheme == 'https' &&
+      (host == 'github.com' || host.endsWith('.githubusercontent.com') || host.endsWith('.github.com'));
+  if (!ok) throw HttpException('Blocked download source: $host');
+}
+
 /// Downloads the APK to [destPath], reporting 0..1 progress. Throws on failure.
 Future<File> downloadApk(
   String url,
@@ -129,6 +137,7 @@ Future<File> downloadApk(
   final tmp = File('$destPath.part');
   try {
     var uri = Uri.parse(url);
+    _checkDownloadUri(uri);
     HttpClientResponse res;
     var hops = 0;
     while (true) {
@@ -141,6 +150,7 @@ Future<File> downloadApk(
         await res.drain<void>();
         if (loc == null) throw const HttpException('Bad redirect');
         uri = uri.resolve(loc);
+        _checkDownloadUri(uri);
         hops++;
         continue;
       }

@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'features/business/estimates_page.dart';
 import 'features/business/item_details_page.dart';
 import 'features/business/reminders_page.dart';
+import 'features/more/legal_page.dart';
 import 'features/business/staff_page.dart';
 import 'features/business/expenses_page.dart';
 import 'features/business/new_purchase_page.dart';
@@ -127,6 +128,10 @@ final appRouter = GoRouter(
                 GoRoute(
                   path: 'item-details',
                   builder: (context, state) => const ItemDetailsPage(),
+                ),
+                GoRoute(
+                  path: 'legal',
+                  builder: (context, state) => const LegalPage(),
                 ),
                 GoRoute(
                   path: 'reminders',

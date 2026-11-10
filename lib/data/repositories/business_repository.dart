@@ -107,6 +107,7 @@ class BusinessRepository {
     final total = lines.fold<int>(0, (a, l) => a + l.amountPaise);
     if (paidPaise < 0 || paidPaise > total) throw ArgumentError('Paid amount 0 se bill total ke beech hona chahiye');
 
+    return db.transaction(() async {
     final when = date ?? DateTime.now();
     final id = await records.save(RecordKinds.purchase, {
       'supplier_id': supplierId,
@@ -120,7 +121,7 @@ class BusinessRepository {
 
     for (final l in lines) {
       final p = await products.getById(l.productId);
-      if (p == null) continue;
+      if (p == null) throw StateError('Item nahi mila (delete ho gaya?): ${l.name}');
       if (p.product.trackStock) {
         await products.adjustStock(productId: l.productId, qtyMilli: l.qtyMilli, reason: 'purchase');
       }
@@ -135,6 +136,7 @@ class BusinessRepository {
       }
     }
     return id;
+    });
   }
 
   Future<List<AppRecord>> purchases() => records.list(RecordKinds.purchase);

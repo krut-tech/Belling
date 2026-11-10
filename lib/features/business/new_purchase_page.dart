@@ -67,8 +67,8 @@ class _NewPurchasePageState extends ConsumerState<NewPurchasePage> {
   void _toast(String m) => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(m)));
 
   Future<void> _save() async {
-    final paid = _paid.text.trim().isEmpty ? _total : parseRupeesToPaise(_paid.text);
-    if (paid == null) {
+    final paid = _paid.text.trim().isEmpty ? _total : parseRupeesToPaise(_paid.text.replaceAll(RegExp(r'[,₹\s]'), ''));
+    if (paid == null || paid < 0 || paid > _total) {
       _toast('Paid amount galat hai');
       return;
     }

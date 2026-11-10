@@ -19,12 +19,14 @@ class AppLockStore {
     return row?.value;
   }
 
-  static Future<bool> isEnabled(AppDatabase db) async => (await _get(db, _hashKey)) != null;
+  static Future<bool> isEnabled(AppDatabase db) async =>
+      (await _get(db, _hashKey)) != null || (await _get(db, _saltKey)) != null;
 
   static Future<bool> verify(AppDatabase db, String pin) async {
     final h = await _get(db, _hashKey);
     final salt = await _get(db, _saltKey);
-    if (h == null || salt == null) return true;
+    if (h == null && salt == null) return true; // no PIN set
+    if (h == null || salt == null) return false; // half-written lock: never open
     return hashPin(pin, salt) == h;
   }
 
@@ -32,10 +34,12 @@ class AppLockStore {
     if (!isValidPin(pin)) throw ArgumentError('PIN 4 se 6 digits ka hona chahiye');
     final r = Random.secure();
     final salt = base64UrlEncode(List<int>.generate(16, (_) => r.nextInt(256)));
-    await db.into(db.appSettingsTable).insertOnConflictUpdate(AppSettingsTableCompanion.insert(key: _saltKey, value: salt));
-    await db.into(db.appSettingsTable).insertOnConflictUpdate(
-          AppSettingsTableCompanion.insert(key: _hashKey, value: hashPin(pin, salt)),
-        );
+    await db.transaction(() async {
+      await db.into(db.appSettingsTable).insertOnConflictUpdate(AppSettingsTableCompanion.insert(key: _saltKey, value: salt));
+      await db.into(db.appSettingsTable).insertOnConflictUpdate(
+            AppSettingsTableCompanion.insert(key: _hashKey, value: hashPin(pin, salt)),
+          );
+    });
   }
 
   static Future<void> clear(AppDatabase db) async {

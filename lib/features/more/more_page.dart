@@ -110,6 +110,14 @@ class MorePage extends ConsumerWidget {
                 ),
                 const Divider(height: 1),
                 ListTile(
+                  leading: const Icon(Icons.policy_outlined, color: Colors.blueGrey),
+                  title: const Text('Privacy & legal', style: TextStyle(fontWeight: FontWeight.bold)),
+                  subtitle: const Text('Data, GST records, customer privacy'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => context.push('/more/legal'),
+                ),
+                const Divider(height: 1),
+                ListTile(
                   leading: const Icon(Icons.category_outlined, color: Colors.brown),
                   title: const Text('Item details', style: TextStyle(fontWeight: FontWeight.bold)),
                   subtitle: const Text('Category, unit aur MRP'),

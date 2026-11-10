@@ -49,7 +49,13 @@ class _AppLockGateState extends ConsumerState<AppLockGate> with WidgetsBindingOb
     try {
       enabled = await AppLockStore.isEnabled(ref.read(databaseProvider));
     } catch (_) {
-      enabled = false;
+      // A temporary DB error must not open the app: try once more.
+      try {
+        await Future<void>.delayed(const Duration(milliseconds: 400));
+        enabled = await AppLockStore.isEnabled(ref.read(databaseProvider));
+      } catch (_) {
+        enabled = false;
+      }
     }
     if (!mounted) return;
     setState(() {

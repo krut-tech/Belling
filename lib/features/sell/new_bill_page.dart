@@ -951,7 +951,10 @@ class _BottomTaxAndPaymentSectionState extends ConsumerState<_BottomTaxAndPaymen
                         isDense: true,
                       ),
                       onChanged: (v) {
-                        final valPaise = parseRupeesToPaise(v);
+                        final clean = v.replaceAll(RegExp(r'[,₹\s]'), '');
+                        var valPaise = parseRupeesToPaise(clean);
+                        // Typed but unreadable (e.g. "abc"): never fall back to "paid in full".
+                        if (valPaise == null && clean.isNotEmpty) valPaise = 0;
                         ref.read(newBillProvider.notifier).setPaidAmountPaise(valPaise);
                       },
                     ),
