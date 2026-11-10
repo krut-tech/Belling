@@ -1,7 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart' hide Text;
-import 'tr_text.dart';
+import '../tr_text.dart';
 
 /// Deep bahi-khata red. Must match android/app/src/main/res/values/colors.xml (splash_bg)
 /// so the native first screen and this splash look like one continuous screen.
