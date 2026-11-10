@@ -39,7 +39,7 @@ void main() {
       final json = {
         'tag_name': 'v1.0.6',
         'assets': [
-          {'name': 'belling-armeabi-v7a.apk', 'browser_download_url': 'https://x/v7.apk'},
+          {'name': 'belling-armeabi-v7a.apkx', 'browser_download_url': 'https://x/v7.apk'},
           {'name': 'belling.apk', 'browser_download_url': 'https://x/belling.apk'},
         ],
       };

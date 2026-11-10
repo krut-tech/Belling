@@ -59,7 +59,7 @@ String detectAbi([String? versionString]) {
 
 /// Reads the release JSON GitHub returns. Returns null when it has no APK.
 /// Each release carries `belling.apk` (64-bit ARM, almost every phone) and
-/// `belling-armeabi-v7a.apk` (old 32-bit phones). Smaller than one fat APK.
+/// `belling-armeabi-v7a.apkx` (old 32-bit phones). Smaller than one fat APK.
 AppRelease? parseRelease(Map<String, dynamic> json, {String abi = 'arm64-v8a'}) {
   final tag = (json['tag_name'] ?? '').toString();
   if (tag.isEmpty) return null;
@@ -70,13 +70,13 @@ AppRelease? parseRelease(Map<String, dynamic> json, {String abi = 'arm64-v8a'}) 
     if (a is Map) {
       final name = (a['name'] ?? '').toString().toLowerCase();
       final url = a['browser_download_url']?.toString();
-      if (name.endsWith('.apk') && url != null && url.isNotEmpty) {
-        byName[name] = url;
-        anyApk ??= url;
-      }
+      if (url == null || url.isEmpty) continue;
+      // `.apkx` = per-CPU file hidden from old app versions (they take the first `.apk`).
+      if (name.endsWith('.apk') || name.endsWith('.apkx')) byName[name] = url;
+      if (name.endsWith('.apk')) anyApk ??= url;
     }
   }
-  final apk = byName['belling-$abi.apk'] ?? byName['belling.apk'] ?? anyApk;
+  final apk = byName['belling-$abi.apkx'] ?? byName['belling.apk'] ?? anyApk;
   if (apk == null || apk.isEmpty) return null;
   var version = tag;
   if (version.startsWith('v') || version.startsWith('V')) {
