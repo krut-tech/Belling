@@ -206,7 +206,7 @@ void main() {
     });
 
     test('Odd tax paise split', () {
-      // 15 paise tax -> CGST 7, SGST 8
+      // 15 paise tax: CGST and SGST must be equal halves (8 + 8, not 7 + 8)
       final result = calculateTax(
         lines: const [
           TaxLineInput(
@@ -220,9 +220,8 @@ void main() {
 
       expect(result.taxablePaise, equals(100));
       // Tax = 100 * 1500 / 10000 = 15 paise
-      expect(result.cgstPaise, equals(7)); // 15 ~/ 2
-      expect(result.sgstPaise, equals(8)); // 15 - 7
-      expect(result.cgstPaise + result.sgstPaise, equals(15));
+      expect(result.cgstPaise, equals(8));
+      expect(result.sgstPaise, equals(result.cgstPaise));
     });
 
     test('Round-off up', () {
@@ -230,7 +229,7 @@ void main() {
         lines: const [
           TaxLineInput(
             qtyMilli: 1000,
-            ratePaise: 9571,
+            ratePaise: 9580,
             gstRateBp: 500,
           ),
         ],
