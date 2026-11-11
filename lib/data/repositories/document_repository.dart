@@ -42,7 +42,7 @@ class BillRow {
 class BillsOverview {
   final List<BillRow> rows;
   final Map<String, int> advanceByParty;
-  const BillsOverview(this.rows, this.advanceByParty);
+  BillsOverview(this.rows, this.advanceByParty);
   late final Map<String, BillRow> byId = {for (final r in rows) r.id: r};
 }
 

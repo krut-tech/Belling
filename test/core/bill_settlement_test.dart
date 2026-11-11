@@ -36,7 +36,7 @@ void main() {
   test('cancelled bill is not due and its refund is not reused', () {
     final docs = [
       inv('a', 10000, 1, status: 'cancelled'),
-      const SettleDoc(
+      SettleDoc(
           id: 'cn', partyId: 'p1', docType: 'credit_note', status: 'issued', totalPaise: 10000, refDocumentId: 'a', issuedAt: DateTime(2026, 1, 3)),
     ];
     final r = settleBills(docs, [
