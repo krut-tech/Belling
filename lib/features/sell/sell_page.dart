@@ -208,6 +208,7 @@ class SellPage extends ConsumerWidget {
                     final party = item.party;
                     final timeStr = DateFormat('hh:mm a').format(doc.issuedAt);
                     final isCancelled = doc.status == 'cancelled';
+                    final nameOrNull = party?.name ?? _customerName(doc.snapshotJson);
 
                     return FadeSlideIn(index: index, child: ListTile(
                       minVerticalPadding: 12,
@@ -220,11 +221,15 @@ class SellPage extends ConsumerWidget {
                       ),
                       title: Row(
                         children: [
-                          Text(
-                            doc.number,
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              decoration: isCancelled ? TextDecoration.lineThrough : null,
+                          Flexible(
+                            child: Text(
+                              nameOrNull ?? doc.number,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                decoration: isCancelled ? TextDecoration.lineThrough : null,
+                              ),
                             ),
                           ),
                           if (isCancelled) ...[
@@ -244,7 +249,7 @@ class SellPage extends ConsumerWidget {
                         ],
                       ),
                       subtitle: Text(
-                        '${party?.name ?? _customerName(doc.snapshotJson) ?? l10n.walkIn} • $timeStr',
+                        '${nameOrNull != null ? doc.number : l10n.walkIn} • $timeStr',
                         style: TextStyle(
                           color: Colors.grey.shade700,
                         ),

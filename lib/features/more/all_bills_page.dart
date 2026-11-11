@@ -131,7 +131,8 @@ class _AllBillsPageState extends ConsumerState<AllBillsPage> {
                     final cancelled = r.status == 'cancelled';
                     final isCn = r.docType == 'credit_note';
                     final due = r.settlement?.duePaise ?? 0;
-                    final name = r.displayName ?? 'Walk-in';
+                    final hasName = r.displayName != null && r.displayName!.trim().isNotEmpty;
+                    final numberLabel = isCn ? 'Credit note ${r.number}' : r.number;
                     return ListTile(
                       leading: CircleAvatar(
                         backgroundColor: cancelled
@@ -153,13 +154,15 @@ class _AllBillsPageState extends ConsumerState<AllBillsPage> {
                         ),
                       ),
                       title: Text(
-                        isCn ? 'Credit note ${r.number}' : r.number,
+                        hasName ? r.displayName! : numberLabel,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
                           decoration: cancelled ? TextDecoration.lineThrough : null,
                         ),
                       ),
-                      subtitle: Text('$name • ${fmt.format(r.issuedAt)}'),
+                      subtitle: Text('${hasName ? numberLabel : 'Walk-in'} • ${fmt.format(r.issuedAt)}'),
                       trailing: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         crossAxisAlignment: CrossAxisAlignment.end,
