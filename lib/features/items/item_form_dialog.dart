@@ -35,6 +35,8 @@ class _ItemFormDialogState extends ConsumerState<ItemFormDialog> {
   late TextEditingController _costPriceController;
   late TextEditingController _openingStockController;
   late TextEditingController _reorderLevelController;
+  late TextEditingController _categoryController;
+  List<String> _knownCategories = const [];
 
   late int _gstRateBp;
   late bool _trackStock;
@@ -70,13 +72,35 @@ class _ItemFormDialogState extends ConsumerState<ItemFormDialog> {
     _gstRateBp = p?.gstRateBp ?? 500; // Default 5%
     _trackStock = p?.trackStock ?? true;
 
+    _categoryController = TextEditingController();
+    _loadCategories(p?.id);
+
     _openingStockController = TextEditingController(text: '');
     _reorderLevelController =
         TextEditingController(text: p != null ? formatMilliUnits(p.reorderLevel) : '0');
   }
 
+  Future<void> _loadCategories(String? productId) async {
+    try {
+      final metas = await ref.read(businessRepositoryProvider).itemMetas();
+      final all = <String>{
+        for (final m in metas.values)
+          if (m.str('category').trim().isNotEmpty) m.str('category').trim(),
+      }.toList()
+        ..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
+      if (!mounted) return;
+      setState(() {
+        _knownCategories = all;
+        if (productId != null && _categoryController.text.isEmpty) {
+          _categoryController.text = metas[productId]?.str('category') ?? '';
+        }
+      });
+    } catch (_) {}
+  }
+
   @override
   void dispose() {
+    _categoryController.dispose();
     _nameController.dispose();
     _barcodeController.dispose();
     _hsnController.dispose();
@@ -121,7 +145,7 @@ class _ItemFormDialogState extends ConsumerState<ItemFormDialog> {
     });
 
     try {
-      await repo.save(
+      final saved = await repo.save(
         id: widget.item?.product.id,
         name: name,
         barcode: _barcodeController.text,
@@ -133,6 +157,13 @@ class _ItemFormDialogState extends ConsumerState<ItemFormDialog> {
         openingStockMilli: openingStockMilli,
         reorderLevel: reorderLevelMilli,
       );
+
+      final cat = _categoryController.text.trim();
+      if (cat.isNotEmpty || widget.item != null) {
+        try {
+          await ref.read(businessRepositoryProvider).saveItemCategory(saved.id, cat);
+        } catch (_) {}
+      }
 
       if (mounted) {
         Navigator.of(context).pop(true);
@@ -268,6 +299,40 @@ class _ItemFormDialogState extends ConsumerState<ItemFormDialog> {
                     ),
                   ],
                 ),
+                const SizedBox(height: 16),
+
+                // Category (free text; "Books > Copies" makes a sub-category)
+                TextFormField(
+                  controller: _categoryController,
+                  textCapitalization: TextCapitalization.words,
+                  onChanged: (_) => setState(() {}),
+                  decoration: const InputDecoration(
+                    labelText: 'Category (optional)',
+                    helperText: 'Jaise Books ya Books > Copies',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                if (_knownCategories.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Wrap(
+                      spacing: 6,
+                      runSpacing: 0,
+                      children: [
+                        for (final c in _knownCategories
+                            .where((c) =>
+                                _categoryController.text.trim().isEmpty ||
+                                (c.toLowerCase().contains(_categoryController.text.trim().toLowerCase()) &&
+                                    c.toLowerCase() != _categoryController.text.trim().toLowerCase()))
+                            .take(8))
+                          ActionChip(
+                            label: Text(c),
+                            visualDensity: VisualDensity.compact,
+                            onPressed: () => setState(() => _categoryController.text = c),
+                          ),
+                      ],
+                    ),
+                  ),
                 const SizedBox(height: 16),
 
                 // HSN and GST Rate

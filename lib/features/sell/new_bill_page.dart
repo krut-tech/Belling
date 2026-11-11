@@ -14,6 +14,7 @@ import '../../l10n/app_localizations.dart';
 import '../items/barcode_scanner_dialog.dart';
 import '../items/item_form_dialog.dart';
 import '../parties/party_form_dialog.dart';
+import 'category_picker.dart';
 import 'new_bill_notifier.dart';
 import '../../core/tr_text.dart';
 import '../../core/tr.dart';
@@ -29,6 +30,7 @@ class _NewBillPageState extends ConsumerState<NewBillPage> {
   final _searchController = TextEditingController();
   final _searchFocusNode = FocusNode();
   String _searchQuery = '';
+  bool _showBill = false; // false = pick items (category rail + grid)
 
   @override
   void dispose() {
@@ -244,6 +246,7 @@ class _NewBillPageState extends ConsumerState<NewBillPage> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final billState = ref.watch(newBillProvider);
+    final showPicker = !_showBill || billState.lines.isEmpty;
 
     const tabularStyle = TextStyle(
       fontFeatures: [FontFeature.tabularFigures()],
@@ -403,28 +406,26 @@ class _NewBillPageState extends ConsumerState<NewBillPage> {
                 ),
               ),
 
+            // Items | Bill switch
+            if (billState.lines.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
+                child: SegmentedButton<bool>(
+                  showSelectedIcon: false,
+                  segments: [
+                    const ButtonSegment(value: false, label: Text('Items'), icon: Icon(Icons.grid_view_rounded, size: 18)),
+                    ButtonSegment(value: true, label: Text('Bill (${billState.lines.length})'), icon: const Icon(Icons.receipt_long, size: 18)),
+                  ],
+                  selected: {!showPicker},
+                  onSelectionChanged: (v) => setState(() => _showBill = v.first),
+                ),
+              ),
+
             // Cart Items List
             Expanded(
-              child: billState.lines.isEmpty
-                  ? Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-                          child: Text(
-                            'Item par tap karke bill mein jodo',
-                            style: Theme.of(context).textTheme.labelLarge?.copyWith(color: Colors.grey.shade700),
-                          ),
-                        ),
-                        Expanded(
-                          child: _SearchResultsList(
-                            searchQuery: '',
-                            onProductSelected: (product) {
-                              ref.read(newBillProvider.notifier).addProduct(product);
-                            },
-                          ),
-                        ),
-                      ],
+              child: showPicker
+                  ? CategoryPicker(
+                      onAdd: (product) => ref.read(newBillProvider.notifier).addProduct(product),
                     )
                   : ListView.separated(
                       padding: const EdgeInsets.symmetric(vertical: 8),
@@ -548,7 +549,14 @@ class _NewBillPageState extends ConsumerState<NewBillPage> {
             ),
 
             // Bottom Summary & Payment Section
-            if (billState.lines.isNotEmpty) const _BottomTaxAndPaymentSection(tabularStyle: tabularStyle),
+            if (billState.lines.isNotEmpty)
+              showPicker
+                  ? _CompactCartBar(
+                      count: billState.lines.length,
+                      totalPaise: billState.grandTotalPaise,
+                      onReview: () => setState(() => _showBill = true),
+                    )
+                  : const _BottomTaxAndPaymentSection(tabularStyle: tabularStyle),
           ],
         ],
       ),
@@ -1114,6 +1122,49 @@ class _CustomerNameFieldState extends ConsumerState<_CustomerNameField> {
           border: OutlineInputBorder(),
         ),
         onChanged: (v) => ref.read(newBillProvider.notifier).setCustomerName(v),
+      ),
+    );
+  }
+}
+
+
+/// Slim cart summary shown while picking items.
+class _CompactCartBar extends StatelessWidget {
+  const _CompactCartBar({required this.count, required this.totalPaise, required this.onReview});
+
+  final int count;
+  final int totalPaise;
+  final VoidCallback onReview;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 10, 16, 14),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        border: Border(top: BorderSide(color: Color(0xFFEADFCB))),
+      ),
+      child: SafeArea(
+        top: false,
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text('$count items', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF6B6894))),
+                  Text(formatRupees(totalPaise), style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800)),
+                ],
+              ),
+            ),
+            FilledButton(
+              style: FilledButton.styleFrom(minimumSize: const Size(140, 52), backgroundColor: const Color(0xFF1F1B4B)),
+              onPressed: onReview,
+              child: const Text('Review bill', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
+            ),
+          ],
+        ),
       ),
     );
   }

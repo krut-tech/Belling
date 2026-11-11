@@ -2,6 +2,7 @@ import '../../core/business_math.dart';
 import '../database.dart';
 import '../records.dart';
 import 'product_repository.dart';
+import '../../core/categories.dart';
 
 class PurchaseLine {
   const PurchaseLine({
@@ -181,6 +182,36 @@ class BusinessRepository {
       'unit': unit.trim(),
       'mrp_paise': mrpPaise,
     }, id: productId).then((_) {});
+  }
+
+  /// Sets only the category of an item (keeps its unit and MRP).
+  Future<void> saveItemCategory(String productId, String category) async {
+    final existing = await records.get(productId);
+    await saveItemMeta(
+      productId,
+      category: normalizeCategory(category),
+      unit: existing?.str('unit') ?? '',
+      mrpPaise: existing?.integer('mrp_paise') ?? 0,
+    );
+  }
+
+  /// Renames a category (and its sub-categories) on every item that uses it.
+  Future<int> renameCategory(String from, String to) async {
+    final target = to.trim();
+    if (target.isEmpty || target == from) return 0;
+    var changed = 0;
+    for (final m in (await itemMetas()).values) {
+      final path = splitCategory(m.str('category'));
+      if (path.parent != from) continue;
+      await saveItemMeta(
+        m.id,
+        category: joinCategory(target, path.child),
+        unit: m.str('unit'),
+        mrpPaise: m.integer('mrp_paise'),
+      );
+      changed++;
+    }
+    return changed;
   }
 
   Future<Map<String, AppRecord>> itemMetas() async {
