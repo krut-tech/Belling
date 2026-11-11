@@ -34,6 +34,7 @@ final pushWorkerProvider = Provider<PushWorker>((ref) {
   final db = ref.watch(databaseProvider);
   final remote = ref.watch(syncRemoteProvider);
   final worker = PushWorker(db: db, remote: remote);
+  worker.onBusinessMismatch = () => ref.read(authSyncServiceProvider).fixBusinessMismatch();
   worker.start();
   ref.onDispose(() => worker.stop());
   return worker;

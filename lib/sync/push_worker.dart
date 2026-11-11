@@ -81,6 +81,19 @@ class PushWorker {
 
   bool _pushAgain = false;
 
+  /// Called when the server says "business does not exist" / row-level security
+  /// denied (this phone's business id differs from the account's). Should merge
+  /// the phone into the account's business and return true if it fixed something.
+  Future<bool> Function()? onBusinessMismatch;
+  DateTime? _lastHeal;
+
+  bool _isBusinessMismatch(Object e) {
+    if (e is! PostgrestException) return false;
+    final msg = e.message.toLowerCase();
+    return (e.code == '404' && msg.contains('business does not exist')) ||
+        (e.code == '42501' && msg.contains('row-level security'));
+  }
+
   /// While true (sign-in, merge, business switch) nothing is pushed, so a
   /// command is never sent with a business id that is about to change.
   bool paused = false;
@@ -99,6 +112,7 @@ class PushWorker {
     _isPushing = true;
 
     try {
+      await _cleanupStaleRejected();
       final pendingCommands = await (db.select(db.outboxCommands)
             ..where((t) => t.status.equals('pending'))
             ..orderBy([
@@ -119,6 +133,26 @@ class PushWorker {
           );
           _backoffSeconds = 5; // Reset backoff on success
         } catch (e) {
+          if (_isBusinessMismatch(e) && onBusinessMismatch != null) {
+            final last = _lastHeal;
+            if (last == null || DateTime.now().difference(last) > const Duration(minutes: 10)) {
+              _lastHeal = DateTime.now();
+              paused = true;
+              var healed = false;
+              try {
+                healed = await onBusinessMismatch!();
+              } catch (_) {
+                healed = false;
+              } finally {
+                paused = false;
+              }
+              if (healed) {
+                // The fix re-queued the rejected commands: start over with fresh payloads.
+                _pushAgain = true;
+                break;
+              }
+            }
+          }
           if (_isClientOrConstraintError(e)) {
             // Mark rejected, do not retry automatically
             await (db.update(db.outboxCommands)..where((t) => t.id.equals(cmd.id))).write(
@@ -144,6 +178,32 @@ class PushWorker {
       if (_pushAgain) {
         _pushAgain = false;
         unawaited(pushPending());
+      }
+    }
+  }
+
+  bool _revivedThisSession = false;
+
+  /// Rejected commands made for a business id this phone no longer uses are
+  /// obsolete (the data was merged under the new id): drop them so the Error
+  /// chip clears. Once per session, commands rejected only because of a business
+  /// mismatch get another chance.
+  Future<void> _cleanupStaleRejected() async {
+    final bus = await (db.select(db.businesses)..limit(1)).getSingleOrNull();
+    if (bus == null) return;
+    await (db.delete(db.outboxCommands)
+          ..where((t) => t.status.equals('rejected') & t.businessId.equals(bus.id).not()))
+        .go();
+    if (!_revivedThisSession) {
+      _revivedThisSession = true;
+      final rejected = await (db.select(db.outboxCommands)..where((t) => t.status.equals('rejected'))).get();
+      for (final c in rejected) {
+        final err = (c.lastError ?? '').toLowerCase();
+        if (err.contains('business does not exist') || err.contains('row-level security')) {
+          await (db.update(db.outboxCommands)..where((t) => t.id.equals(c.id))).write(
+            const OutboxCommandsCompanion(status: Value('pending'), lastError: Value(null)),
+          );
+        }
       }
     }
   }
