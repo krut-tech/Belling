@@ -17,8 +17,8 @@ class FadeSlideIn extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (MediaQuery.maybeOf(context)?.disableAnimations ?? false) return child;
-    final delayMs = (index.clamp(0, 8)) * 40;
-    final total = 320 + delayMs;
+    final delayMs = (index.clamp(0, 6)) * 25;
+    final total = 200 + delayMs;
     return TweenAnimationBuilder<double>(
       tween: Tween(begin: 0, end: 1),
       duration: Duration(milliseconds: total),

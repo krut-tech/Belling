@@ -180,7 +180,7 @@ class ScaffoldWithNavBar extends StatelessWidget {
       ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: navigationShell.currentIndex,
-        animationDuration: const Duration(milliseconds: 400),
+        animationDuration: const Duration(milliseconds: 200),
         onDestinationSelected: (index) {
           navigationShell.goBranch(
             index,
