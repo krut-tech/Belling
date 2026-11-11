@@ -104,10 +104,16 @@ class _PartyFormDialogState extends ConsumerState<PartyFormDialog> {
     final isEditing = widget.party != null;
 
     return Dialog(
+      insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 480),
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24.0),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Flexible(
+              child: SingleChildScrollView(
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
           child: Form(
             key: _formKey,
             child: Column(
@@ -182,7 +188,15 @@ class _PartyFormDialogState extends ConsumerState<PartyFormDialog> {
                   },
                 ),
                 const SizedBox(height: 24),
-                Row(
+                const SizedBox.shrink(),
+              ],
+            ),
+          ),
+        ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 4, 20, 12),
+              child: Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
                     TextButton(
@@ -208,9 +222,8 @@ class _PartyFormDialogState extends ConsumerState<PartyFormDialog> {
                     ),
                   ],
                 ),
-              ],
             ),
-          ),
+          ],
         ),
       ),
     );
