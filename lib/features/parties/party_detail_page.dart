@@ -7,6 +7,7 @@ import 'package:share_plus/share_plus.dart';
 import '../../core/money.dart';
 import '../../data/database.dart';
 import '../../data/providers.dart';
+import '../../data/repositories/document_repository.dart';
 import '../../data/repositories/party_repository.dart';
 import '../../l10n/app_localizations.dart';
 import 'dues_reminder_sheet.dart';
@@ -58,6 +59,7 @@ class PartyDetailPage extends ConsumerWidget {
     final balanceAsync = ref.watch(partyBalanceStreamProvider(partyId));
     final ledgerAsync = ref.watch(partyLedgerStreamProvider(partyId));
     final businessAsync = ref.watch(currentBusinessStreamProvider);
+    final billById = ref.watch(billsOverviewProvider).valueOrNull?.byId ?? const <String, BillRow>{};
 
     return partyAsync.when(
       data: (party) {
@@ -224,7 +226,7 @@ class PartyDetailPage extends ConsumerWidget {
                       separatorBuilder: (context, index) => const Divider(height: 1),
                       itemBuilder: (context, index) {
                         final item = items[index];
-                        return FadeSlideIn(index: index, child: _buildLedgerTile(context, l10n, item));
+                        return FadeSlideIn(index: index, child: _buildLedgerTile(context, l10n, item, billById[item.documentId]));
                       },
                     );
                   },
@@ -275,7 +277,7 @@ class PartyDetailPage extends ConsumerWidget {
     }
   }
 
-  Widget _buildLedgerTile(BuildContext context, AppLocalizations l10n, LedgerItem item) {
+  Widget _buildLedgerTile(BuildContext context, AppLocalizations l10n, LedgerItem item, BillRow? bill) {
     IconData icon;
     Color iconColor;
     String sign;
@@ -318,6 +320,21 @@ class PartyDetailPage extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(dateStr, style: const TextStyle(fontSize: 12)),
+          if (item.type == LedgerItemType.invoice && bill?.settlement != null)
+            Text(
+              bill!.status == 'cancelled'
+                  ? 'Cancelled'
+                  : (bill.settlement!.duePaise > 0
+                      ? 'Paid ${formatRupees(bill.settlement!.paidPaise)} · Baaki ${formatRupees(bill.settlement!.duePaise)}'
+                      : 'Paid in full'),
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: (bill.settlement!.duePaise > 0 && bill.status != 'cancelled')
+                    ? Colors.red.shade700
+                    : Colors.green.shade700,
+              ),
+            ),
           if (item.note != null && item.note!.isNotEmpty)
             Text(
               '${l10n.note}: ${item.note}',

@@ -389,6 +389,8 @@ class _NewBillPageState extends ConsumerState<NewBillPage> {
               ),
             ),
 
+            if (billState.party == null) const _CustomerNameField(),
+
             if (billState.error != null)
               Container(
                 width: double.infinity,
@@ -1071,6 +1073,48 @@ class _PaymentChip extends StatelessWidget {
       selected: selected,
       onSelected: (_) => onSelected(),
       showCheckmark: false,
+    );
+  }
+}
+
+
+/// Optional customer name for bills without a saved party.
+class _CustomerNameField extends ConsumerStatefulWidget {
+  const _CustomerNameField();
+
+  @override
+  ConsumerState<_CustomerNameField> createState() => _CustomerNameFieldState();
+}
+
+class _CustomerNameFieldState extends ConsumerState<_CustomerNameField> {
+  late final TextEditingController _c = TextEditingController(text: ref.read(newBillProvider).customerName);
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // The cart was cleared (bill issued): clear the field too.
+    ref.listen<String>(newBillProvider.select((s) => s.customerName), (_, next) {
+      if (next.isEmpty && _c.text.isNotEmpty) _c.clear();
+    });
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+      child: TextField(
+        controller: _c,
+        textCapitalization: TextCapitalization.words,
+        textInputAction: TextInputAction.done,
+        decoration: const InputDecoration(
+          labelText: 'Customer name (optional)',
+          prefixIcon: Icon(Icons.badge_outlined),
+          isDense: true,
+          border: OutlineInputBorder(),
+        ),
+        onChanged: (v) => ref.read(newBillProvider.notifier).setCustomerName(v),
+      ),
     );
   }
 }

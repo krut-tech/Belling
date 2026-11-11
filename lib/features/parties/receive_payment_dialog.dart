@@ -49,6 +49,21 @@ class _ReceivePaymentDialogState extends ConsumerState<ReceivePaymentDialog> {
     super.dispose();
   }
 
+  /// Shows what this payment will do: settle oldest bills first, extra = advance.
+  String? _helper() {
+    final balance = ref.watch(partyBalanceStreamProvider(widget.party.id)).valueOrNull;
+    if (balance == null) return null;
+    final entered = parseRupeesToPaise(_amountController.text.replaceAll(RegExp(r'[,₹\s]'), '')) ?? 0;
+    if (balance <= 0) {
+      return entered > 0 ? 'Koi baaki nahi, ye ${formatRupees(entered)} advance ke roop mein jama hoga' : 'Koi baaki nahi hai';
+    }
+    if (entered <= 0) return 'Abhi baaki: ${formatRupees(balance)} (purane bill pehle settle honge)';
+    if (entered > balance) {
+      return 'Baaki ${formatRupees(balance)} clear hoga, extra ${formatRupees(entered - balance)} advance jama hoga';
+    }
+    return 'Baaki ${formatRupees(balance)} → ${formatRupees(balance - entered)} bachega';
+  }
+
   Future<void> _selectDate() async {
     final pickedDate = await showDatePicker(
       context: context,
@@ -138,9 +153,12 @@ class _ReceivePaymentDialogState extends ConsumerState<ReceivePaymentDialog> {
                 TextFormField(
                   controller: _amountController,
                   keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  onChanged: (_) => setState(() {}),
                   decoration: InputDecoration(
                     labelText: l10n.amount,
                     border: const OutlineInputBorder(),
+                    helperMaxLines: 3,
+                    helperText: _helper(),
                   ),
                   validator: (v) {
                     final paise = parseRupeesToPaise(v ?? '');

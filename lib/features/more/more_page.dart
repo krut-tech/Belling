@@ -110,6 +110,14 @@ class MorePage extends ConsumerWidget {
                 ),
                 const Divider(height: 1),
                 ListTile(
+                  leading: const Icon(Icons.history_edu_outlined, color: Colors.deepOrange),
+                  title: const Text('All bills', style: TextStyle(fontWeight: FontWeight.bold)),
+                  subtitle: const Text('Saare purane bills, search aur filter. Kabhi delete nahi hote'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => context.push('/more/all-bills'),
+                ),
+                const Divider(height: 1),
+                ListTile(
                   leading: const Icon(Icons.policy_outlined, color: Colors.blueGrey),
                   title: const Text('Privacy & legal', style: TextStyle(fontWeight: FontWeight.bold)),
                   subtitle: const Text('Data, GST records, customer privacy'),

@@ -614,6 +614,7 @@ class AppDatabase extends _$AppDatabase {
     String? refDocumentId,
     DateTime? issuedAt,
     Map<String, dynamic>? customSnapshot,
+    String? customerName,
   }) async {
     if (lines.isEmpty) {
       throw ArgumentError('A document needs at least one line');
@@ -755,6 +756,8 @@ class AppDatabase extends _$AppDatabase {
             'round_off_paise': taxResult.roundOffPaise,
             'total_paise': taxResult.totalPaise,
           },
+          if (buyer == null && customerName != null && customerName.trim().isNotEmpty)
+            'customer_name': customerName.trim(),
           'paid_paise': paidPaise,
           'balance_paise': balancePaise,
           'number': documentNumber,

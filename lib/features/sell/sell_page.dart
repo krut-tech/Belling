@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart' hide Text;
 import '../../core/widgets/motion.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -10,6 +12,17 @@ import '../../data/providers.dart';
 import '../../l10n/app_localizations.dart';
 import '../../sync/sync_chip.dart';
 import '../../core/tr_text.dart';
+
+String? _customerName(String snapshotJson) {
+  if (!snapshotJson.contains('customer_name')) return null;
+  try {
+    final m = jsonDecode(snapshotJson);
+    final n = m is Map ? m['customer_name'] : null;
+    return n is String && n.isNotEmpty ? n : null;
+  } catch (_) {
+    return null;
+  }
+}
 
 class SellPage extends ConsumerWidget {
   const SellPage({super.key});
@@ -231,7 +244,7 @@ class SellPage extends ConsumerWidget {
                         ],
                       ),
                       subtitle: Text(
-                        '${party?.name ?? l10n.walkIn} • $timeStr',
+                        '${party?.name ?? _customerName(doc.snapshotJson) ?? l10n.walkIn} • $timeStr',
                         style: TextStyle(
                           color: Colors.grey.shade700,
                         ),

@@ -96,6 +96,7 @@ class NewBillState {
   final bool isSaving;
   final String? error;
   final bool isLoaded;
+  final String customerName; // optional, for walk-in bills
 
   NewBillState({
     this.lines = const [],
@@ -106,6 +107,7 @@ class NewBillState {
     this.isSaving = false,
     this.error,
     this.isLoaded = false,
+    this.customerName = '',
   });
 
   /// Walk-in customers (no party) and parties without a state are billed as
@@ -160,6 +162,7 @@ class NewBillState {
     String? error,
     bool clearError = false,
     bool? isLoaded,
+    String? customerName,
   }) {
     return NewBillState(
       lines: lines ?? this.lines,
@@ -172,6 +175,7 @@ class NewBillState {
       isSaving: isSaving ?? this.isSaving,
       error: clearError ? null : (error ?? this.error),
       isLoaded: isLoaded ?? this.isLoaded,
+      customerName: customerName ?? this.customerName,
     );
   }
 
@@ -328,6 +332,10 @@ class NewBillNotifier extends StateNotifier<NewBillState> {
     _persistDraft();
   }
 
+  void setCustomerName(String name) {
+    state = state.copyWith(customerName: name);
+  }
+
   void setParty(Party? party) {
     if (party == null) {
       state = state.copyWith(clearParty: true, clearError: true);
@@ -481,6 +489,7 @@ class NewBillNotifier extends StateNotifier<NewBillState> {
         partyId: state.party?.id,
         isInterState: state.isInterState,
         payments: paymentsList,
+        customerName: state.party == null ? state.customerName : null,
       );
 
       // The invoice is already saved. A failure while clearing the cart must not

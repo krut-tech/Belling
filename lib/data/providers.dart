@@ -104,6 +104,11 @@ final todayDocumentsStreamProvider = StreamProvider<List<DocumentWithParty>>((re
   return repo.watchTodayDocuments();
 });
 
+/// All bills with paid/due (one shared computation for All Bills + party ledger).
+final billsOverviewProvider = StreamProvider<BillsOverview>((ref) {
+  return ref.watch(documentRepositoryProvider).watchBillsOverview();
+});
+
 final currentBusinessStreamProvider = StreamProvider<Business?>((ref) {
   final db = ref.watch(databaseProvider);
   final businessId = ref.watch(currentBusinessIdProvider);

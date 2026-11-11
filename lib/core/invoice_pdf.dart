@@ -177,7 +177,7 @@ Future<Uint8List> generateInvoicePdf({
   final upiId = seller['upi_id'] as String?;
   final invoiceTerms = seller['invoice_terms'] as String?;
 
-  final buyerName = buyer?['name'] as String? ?? 'Walk-in Customer';
+  final buyerName = buyer?['name'] as String? ?? (snapshotMap['customer_name'] as String?) ?? 'Walk-in Customer';
   final buyerPhone = buyer?['phone'] as String?;
   final buyerGstin = buyer?['gstin'] as String?;
   final buyerStateCode = buyer?['state_code'] as String?;
