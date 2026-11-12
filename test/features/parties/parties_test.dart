@@ -411,6 +411,10 @@ void main() {
 
       await tester.pumpAndSettle();
 
+      // Items are picked first; open the bill to see the Issue button.
+      await tester.tap(find.text('Review bill'));
+      await tester.pumpAndSettle();
+
       // Tap "Issue Invoice" button
       final issueButton = find.text('Issue Invoice');
       expect(issueButton, findsOneWidget);
