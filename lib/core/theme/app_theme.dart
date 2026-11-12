@@ -49,7 +49,7 @@ class AppTheme {
         color: AppColors.lightSurface,
         elevation: 0,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(22),
           side: const BorderSide(color: AppColors.lightBorder, width: 1),
         ),
       ),
@@ -58,19 +58,19 @@ class AppTheme {
         fillColor: AppColors.lightSurface,
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(16),
           borderSide: const BorderSide(color: AppColors.lightBorder),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(16),
           borderSide: const BorderSide(color: AppColors.lightBorder),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(16),
           borderSide: const BorderSide(color: AppColors.lightPrimary, width: 2),
         ),
         errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(16),
           borderSide: const BorderSide(color: AppColors.lightDanger),
         ),
       ),
@@ -78,21 +78,21 @@ class AppTheme {
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.lightPrimary,
           foregroundColor: Colors.white,
-          minimumSize: const Size(48, 52),
+          minimumSize: const Size(48, 54),
           textStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
           elevation: 0,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(18),
           ),
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
-          foregroundColor: AppColors.lightPrimary,
           minimumSize: const Size(48, 48),
-          side: const BorderSide(color: AppColors.lightPrimary),
+          foregroundColor: AppColors.lightText,
+          side: const BorderSide(color: AppColors.lightBorder),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(16),
           ),
         ),
       ),
@@ -108,11 +108,13 @@ class AppTheme {
         contentPadding: const EdgeInsets.symmetric(horizontal: 16),
       ),
       chipTheme: ChipThemeData(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
         side: const BorderSide(color: AppColors.lightBorder),
-        selectedColor: AppColors.lightPrimary.withValues(alpha: 0.16),
+        selectedColor: AppColors.softSaffron,
         backgroundColor: AppColors.lightSurface,
-        labelStyle: const TextStyle(fontWeight: FontWeight.w600, color: AppColors.lightText),
+        showCheckmark: false,
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+        labelStyle: const TextStyle(fontWeight: FontWeight.w700, color: AppColors.lightText),
       ),
       segmentedButtonTheme: SegmentedButtonThemeData(
         style: SegmentedButton.styleFrom(
@@ -123,7 +125,7 @@ class AppTheme {
       progressIndicatorTheme: const ProgressIndicatorThemeData(color: AppColors.lightPrimary),
       bottomSheetTheme: const BottomSheetThemeData(
         showDragHandle: true,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(30))),
       ),
       pageTransitionsTheme: kSmoothPageTransitions,
       appBarTheme: const AppBarTheme(
@@ -133,8 +135,9 @@ class AppTheme {
         scrolledUnderElevation: 0,
         centerTitle: false,
         titleTextStyle: TextStyle(
-          fontSize: 20,
+          fontSize: 22,
           fontWeight: FontWeight.w800,
+          letterSpacing: -0.4,
           color: AppColors.lightText,
         ),
       ),
@@ -159,14 +162,14 @@ class AppTheme {
       floatingActionButtonTheme: FloatingActionButtonThemeData(
         backgroundColor: AppColors.lightPrimary,
         foregroundColor: Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       ),
       snackBarTheme: SnackBarThemeData(
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
       dialogTheme: DialogThemeData(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
       ),
       bottomNavigationBarTheme: const BottomNavigationBarThemeData(
         backgroundColor: AppColors.lightBackground,

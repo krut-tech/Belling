@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'core/widgets/belling_ui.dart';
 import 'package:go_router/go_router.dart';
 
 import 'features/business/estimates_page.dart';
@@ -178,41 +179,20 @@ class ScaffoldWithNavBar extends StatelessWidget {
       body: UpdateChecker(
         child: TabFadeIn(index: navigationShell.currentIndex, child: navigationShell),
       ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: navigationShell.currentIndex,
-        animationDuration: const Duration(milliseconds: 200),
-        onDestinationSelected: (index) {
+      bottomNavigationBar: PillNavBar(
+        index: navigationShell.currentIndex,
+        onSelected: (index) {
           navigationShell.goBranch(
             index,
             initialLocation: index == navigationShell.currentIndex,
           );
         },
-        destinations: [
-          NavigationDestination(
-            icon: const Icon(Icons.point_of_sale_outlined),
-            selectedIcon: const Icon(Icons.point_of_sale),
-            label: l10n.tabSell,
-          ),
-          NavigationDestination(
-            icon: const Icon(Icons.inventory_2_outlined),
-            selectedIcon: const Icon(Icons.inventory_2),
-            label: l10n.tabItems,
-          ),
-          NavigationDestination(
-            icon: const Icon(Icons.people_outline),
-            selectedIcon: const Icon(Icons.people),
-            label: l10n.tabParties,
-          ),
-          NavigationDestination(
-            icon: const Icon(Icons.bar_chart_outlined),
-            selectedIcon: const Icon(Icons.bar_chart),
-            label: l10n.tabReports,
-          ),
-          NavigationDestination(
-            icon: const Icon(Icons.more_horiz),
-            selectedIcon: const Icon(Icons.more_horiz),
-            label: l10n.tabMore,
-          ),
+        items: [
+          PillNavItem(Icons.home_rounded, l10n.tabSell),
+          PillNavItem(Icons.inventory_2_outlined, l10n.tabItems),
+          PillNavItem(Icons.people_outline_rounded, l10n.tabParties),
+          PillNavItem(Icons.bar_chart_rounded, l10n.tabReports),
+          PillNavItem(Icons.grid_view_rounded, l10n.tabMore),
         ],
       ),
     );
