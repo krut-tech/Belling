@@ -392,7 +392,7 @@ class _NewBillPageState extends ConsumerState<NewBillPage> {
               ),
             ),
 
-            if (billState.party == null) const _CustomerNameField(),
+            if (billState.party == null && !showPicker) const _CustomerNameField(),
 
             if (billState.error != null)
               Container(
