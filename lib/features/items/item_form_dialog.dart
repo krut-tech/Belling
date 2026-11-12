@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart' hide Text;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/categories.dart';
 import '../../core/money.dart';
 import '../../data/providers.dart';
 import '../../data/repositories/product_repository.dart';
@@ -41,6 +42,8 @@ class _ItemFormDialogState extends ConsumerState<ItemFormDialog> {
   late int _gstRateBp;
   late bool _trackStock;
   bool _isSaving = false;
+  bool _savedAny = false;
+  late bool _moreOpen;
   String? _errorMessage;
 
   static const _gstOptions = [
@@ -69,6 +72,9 @@ class _ItemFormDialogState extends ConsumerState<ItemFormDialog> {
     _sellingPriceController = TextEditingController(text: sellingRupeesStr);
     _costPriceController = TextEditingController(text: costRupeesStr);
 
+    _moreOpen = (widget.initialBarcode ?? p?.barcode ?? '').isNotEmpty ||
+        (p?.hsn ?? '').isNotEmpty ||
+        (p?.costPaise ?? 0) > 0;
     _gstRateBp = p?.gstRateBp ?? 500; // Default 5%
     _trackStock = p?.trackStock ?? true;
 
@@ -111,6 +117,97 @@ class _ItemFormDialogState extends ConsumerState<ItemFormDialog> {
     super.dispose();
   }
 
+  Future<void> _openCategorySheet() async {
+    final picked = await showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (_) => _CategorySheet(
+        known: _knownCategories,
+        current: _categoryController.text,
+      ),
+    );
+    if (picked != null && mounted) {
+      setState(() {
+        _categoryController.text = picked;
+        if (picked.isNotEmpty && !_knownCategories.contains(picked)) {
+          _knownCategories = [..._knownCategories, picked];
+        }
+      });
+    }
+  }
+
+  Widget _categorySection() {
+    final cur = splitCategory(_categoryController.text);
+    final parents = <String>{
+      for (final c in _knownCategories) splitCategory(c).parent,
+      if (cur.parent.isNotEmpty) cur.parent,
+    }.where((e) => e.isNotEmpty).toList()
+      ..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
+    final children = <String>{
+      for (final c in _knownCategories)
+        if (splitCategory(c).parent == cur.parent && splitCategory(c).child != null)
+          splitCategory(c).child!,
+    }.toList()
+      ..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Expanded(
+              child: Text('Category', style: TextStyle(fontWeight: FontWeight.w700)),
+            ),
+            TextButton.icon(
+              onPressed: _openCategorySheet,
+              icon: const Icon(Icons.add, size: 18),
+              label: const Text('New'),
+            ),
+          ],
+        ),
+        Wrap(
+          spacing: 8,
+          runSpacing: 4,
+          children: [
+            for (final c in parents)
+              ChoiceChip(
+                label: Text(c),
+                selected: cur.parent == c,
+                onSelected: (sel) => setState(
+                    () => _categoryController.text = sel ? c : ''),
+              ),
+          ],
+        ),
+        if (cur.parent.isNotEmpty) ...[
+          const SizedBox(height: 6),
+          Wrap(
+            spacing: 6,
+            runSpacing: 4,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              Text('Inside ${cur.parent}:',
+                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+              for (final c in children)
+                ChoiceChip(
+                  label: Text(c),
+                  visualDensity: VisualDensity.compact,
+                  selected: cur.child == c,
+                  onSelected: (sel) => setState(() =>
+                      _categoryController.text = joinCategory(cur.parent, sel ? c : null)),
+                ),
+              ActionChip(
+                avatar: const Icon(Icons.add, size: 16),
+                label: const Text('Sub'),
+                visualDensity: VisualDensity.compact,
+                onPressed: _openCategorySheet,
+              ),
+            ],
+          ),
+        ],
+      ],
+    );
+  }
+
   Future<void> _scanBarcode() async {
     final code = await BarcodeScannerDialog.show(context);
     if (code != null && code.isNotEmpty) {
@@ -120,7 +217,7 @@ class _ItemFormDialogState extends ConsumerState<ItemFormDialog> {
     }
   }
 
-  Future<void> _save() async {
+  Future<void> _save({bool addNext = false}) async {
     if (!_formKey.currentState!.validate()) return;
 
     final l10n = AppLocalizations.of(context)!;
@@ -165,7 +262,22 @@ class _ItemFormDialogState extends ConsumerState<ItemFormDialog> {
         } catch (_) {}
       }
 
-      if (mounted) {
+      _savedAny = true;
+      if (!mounted) return;
+      if (addNext) {
+        setState(() {
+          _isSaving = false;
+          _nameController.clear();
+          _barcodeController.clear();
+          _sellingPriceController.clear();
+          _costPriceController.clear();
+          _openingStockController.clear();
+        });
+        _loadCategories(null);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Saved: $name'), duration: const Duration(seconds: 1)),
+        );
+      } else {
         Navigator.of(context).pop(true);
       }
     } catch (e) {
@@ -267,6 +379,7 @@ class _ItemFormDialogState extends ConsumerState<ItemFormDialog> {
                 // Item Name
                 TextFormField(
                   controller: _nameController,
+                  textCapitalization: TextCapitalization.words,
                   decoration: InputDecoration(
                     labelText: l10n.itemName,
                     border: const OutlineInputBorder(),
@@ -275,141 +388,45 @@ class _ItemFormDialogState extends ConsumerState<ItemFormDialog> {
                 ),
                 const SizedBox(height: 16),
 
-                // Barcode + Scan button
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextFormField(
-                        controller: _barcodeController,
-                        decoration: InputDecoration(
-                          labelText: l10n.barcode,
-                          hintText: l10n.typeOrScanBarcode,
-                          border: const OutlineInputBorder(),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    OutlinedButton.icon(
-                      style: OutlinedButton.styleFrom(
-                        minimumSize: const Size(88, 48), // min 48px touch height
-                      ),
-                      onPressed: _scanBarcode,
-                      icon: const Icon(Icons.qr_code_scanner),
-                      label: Text(l10n.scanBarcode),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-
-                // Category (free text; "Books > Copies" makes a sub-category)
+                // Selling price
                 TextFormField(
-                  controller: _categoryController,
-                  textCapitalization: TextCapitalization.words,
-                  onChanged: (_) => setState(() {}),
-                  decoration: const InputDecoration(
-                    labelText: 'Category (optional)',
-                    helperText: 'Jaise Books ya Books > Copies',
-                    border: OutlineInputBorder(),
+                  controller: _sellingPriceController,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  decoration: InputDecoration(
+                    labelText: l10n.sellingPrice,
+                    hintText: '0.00',
+                    prefixText: '₹ ',
+                    border: const OutlineInputBorder(),
                   ),
+                  validator: (v) {
+                    if (v == null || parseRupeesToPaise(v) == null) {
+                      return l10n.priceRequired;
+                    }
+                    return null;
+                  },
                 ),
-                if (_knownCategories.isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 8),
-                    child: Wrap(
-                      spacing: 6,
-                      runSpacing: 0,
-                      children: [
-                        for (final c in _knownCategories
-                            .where((c) =>
-                                _categoryController.text.trim().isEmpty ||
-                                (c.toLowerCase().contains(_categoryController.text.trim().toLowerCase()) &&
-                                    c.toLowerCase() != _categoryController.text.trim().toLowerCase()))
-                            .take(8))
-                          ActionChip(
-                            label: Text(c),
-                            visualDensity: VisualDensity.compact,
-                            onPressed: () => setState(() => _categoryController.text = c),
-                          ),
-                      ],
-                    ),
-                  ),
                 const SizedBox(height: 16),
 
-                // HSN and GST Rate
-                Row(
+                // GST rate chips
+                Text(l10n.gstRate, style: const TextStyle(fontWeight: FontWeight.w700)),
+                const SizedBox(height: 6),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 4,
                   children: [
-                    Expanded(
-                      child: TextFormField(
-                        controller: _hsnController,
-                        decoration: InputDecoration(
-                          labelText: l10n.hsn,
-                          border: const OutlineInputBorder(),
-                        ),
+                    for (final bp in _gstOptions)
+                      ChoiceChip(
+                        label: Text('${formatGstRateBp(bp)}%'),
+                        selected: _gstRateBp == bp,
+                        onSelected: (_) => setState(() => _gstRateBp = bp),
                       ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: DropdownButtonFormField<int>(
-                        initialValue: _gstRateBp,
-                        decoration: InputDecoration(
-                          labelText: l10n.gstRate,
-                          border: const OutlineInputBorder(),
-                        ),
-                        items: _gstOptions.map((bp) {
-                          final percentStr = formatGstRateBp(bp);
-                          return DropdownMenuItem<int>(
-                            value: bp,
-                            child: Text('$percentStr%'),
-                          );
-                        }).toList(),
-                        onChanged: (val) {
-                          if (val != null) {
-                            setState(() {
-                              _gstRateBp = val;
-                            });
-                          }
-                        },
-                      ),
-                    ),
                   ],
                 ),
                 const SizedBox(height: 16),
 
-                // Selling Price and Cost Price
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextFormField(
-                        controller: _sellingPriceController,
-                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                        decoration: InputDecoration(
-                          labelText: l10n.sellingPrice,
-                          hintText: '0.00',
-                          border: const OutlineInputBorder(),
-                        ),
-                        validator: (v) {
-                          if (v == null || parseRupeesToPaise(v) == null) {
-                            return l10n.priceRequired;
-                          }
-                          return null;
-                        },
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: TextFormField(
-                        controller: _costPriceController,
-                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                        decoration: InputDecoration(
-                          labelText: l10n.costPrice,
-                          hintText: '0.00',
-                          border: const OutlineInputBorder(),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
+                // Category chips + "New" sheet
+                _categorySection(),
+                const SizedBox(height: 8),
 
                 // Track Inventory Switch
                 SwitchListTile(
@@ -455,7 +472,74 @@ class _ItemFormDialogState extends ConsumerState<ItemFormDialog> {
                   ),
                 ],
 
-                const SizedBox(height: 24),
+                const SizedBox(height: 8),
+                // More details (barcode, HSN, cost price)
+                Container(
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Theme.of(context).dividerColor),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Theme(
+                    data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+                    child: ExpansionTile(
+                      initiallyExpanded: _moreOpen,
+                      title: const Text('More details'),
+                      subtitle: const Text('Barcode · HSN · Cost price'),
+                      childrenPadding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: TextFormField(
+                                controller: _barcodeController,
+                                decoration: InputDecoration(
+                                  labelText: l10n.barcode,
+                                  hintText: l10n.typeOrScanBarcode,
+                                  border: const OutlineInputBorder(),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            OutlinedButton.icon(
+                              style: OutlinedButton.styleFrom(minimumSize: const Size(88, 48)),
+                              onPressed: _scanBarcode,
+                              icon: const Icon(Icons.qr_code_scanner),
+                              label: Text(l10n.scanBarcode),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: TextFormField(
+                                controller: _hsnController,
+                                decoration: InputDecoration(
+                                  labelText: l10n.hsn,
+                                  border: const OutlineInputBorder(),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: TextFormField(
+                                controller: _costPriceController,
+                                keyboardType:
+                                    const TextInputType.numberWithOptions(decimal: true),
+                                decoration: InputDecoration(
+                                  labelText: l10n.costPrice,
+                                  hintText: '0.00',
+                                  border: const OutlineInputBorder(),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
 
               ],
             ),
@@ -471,10 +555,17 @@ class _ItemFormDialogState extends ConsumerState<ItemFormDialog> {
                       style: TextButton.styleFrom(
                         minimumSize: const Size(80, 48),
                       ),
-                      onPressed: () => Navigator.of(context).pop(),
+                      onPressed: () => Navigator.of(context).pop(_savedAny ? true : null),
                       child: Text(l10n.cancel),
                     ),
-                    const SizedBox(width: 12),
+                    if (!isEditing) ...[
+                      OutlinedButton(
+                        style: OutlinedButton.styleFrom(minimumSize: const Size(80, 48)),
+                        onPressed: _isSaving ? null : () => _save(addNext: true),
+                        child: const Text('Save & next'),
+                      ),
+                    ],
+                    const SizedBox(width: 8),
                     ElevatedButton(
                       style: ElevatedButton.styleFrom(
                         minimumSize: const Size(100, 48),
@@ -493,6 +584,167 @@ class _ItemFormDialogState extends ConsumerState<ItemFormDialog> {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Bottom sheet to pick or create a category / sub-category.
+class _CategorySheet extends StatefulWidget {
+  final List<String> known;
+  final String current;
+  const _CategorySheet({required this.known, required this.current});
+
+  @override
+  State<_CategorySheet> createState() => _CategorySheetState();
+}
+
+class _CategorySheetState extends State<_CategorySheet> {
+  late String _parent;
+  String? _child;
+  final _nameCtrl = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    final c = splitCategory(widget.current);
+    _parent = c.parent;
+    _child = c.child;
+  }
+
+  @override
+  void dispose() {
+    _nameCtrl.dispose();
+    super.dispose();
+  }
+
+  List<String> get _parents => <String>{
+        for (final c in widget.known) splitCategory(c).parent,
+        if (_parent.isNotEmpty) _parent,
+      }.where((e) => e.isNotEmpty).toList()
+        ..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
+
+  List<String> get _children => <String>{
+        for (final c in widget.known)
+          if (splitCategory(c).parent == _parent && splitCategory(c).child != null)
+            splitCategory(c).child!,
+        if (_child != null) _child!,
+      }.toList()
+        ..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
+
+  void _addTyped({required bool asChild}) {
+    final t = _nameCtrl.text.trim().replaceAll('>', ' ').trim();
+    if (t.isEmpty) return;
+    setState(() {
+      if (asChild && _parent.isNotEmpty) {
+        _child = t;
+      } else {
+        _parent = t;
+        _child = null;
+      }
+      _nameCtrl.clear();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bottom = MediaQuery.of(context).viewInsets.bottom;
+    final result = joinCategory(_parent, _child);
+    return Padding(
+      padding: EdgeInsets.fromLTRB(16, 0, 16, 16 + bottom),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text('Category chuno', style: Theme.of(context).textTheme.titleLarge),
+          const SizedBox(height: 12),
+          Flexible(
+            child: SingleChildScrollView(
+              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 4,
+                    children: [
+                      for (final c in _parents)
+                        ChoiceChip(
+                          label: Text(c),
+                          selected: _parent == c,
+                          onSelected: (_) => setState(() {
+                            _parent = c;
+                            _child = null;
+                          }),
+                        ),
+                    ],
+                  ),
+                  if (_parent.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    Text('Inside $_parent',
+                        style: const TextStyle(fontWeight: FontWeight.w700)),
+                    const SizedBox(height: 4),
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 4,
+                      children: [
+                        for (final c in _children)
+                          ChoiceChip(
+                            label: Text(c),
+                            selected: _child == c,
+                            onSelected: (sel) => setState(() => _child = sel ? c : null),
+                          ),
+                      ],
+                    ),
+                  ],
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: _nameCtrl,
+                    textCapitalization: TextCapitalization.words,
+                    decoration: const InputDecoration(
+                      labelText: 'Nayi category / sub-category ka naam',
+                      border: OutlineInputBorder(),
+                    ),
+                    onSubmitted: (_) => _addTyped(asChild: false),
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () => _addTyped(asChild: false),
+                          child: const Text('+ Category'),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: _parent.isEmpty ? null : () => _addTyped(asChild: true),
+                          child: Text(_parent.isEmpty ? '+ Sub' : '+ Sub in $_parent'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, ''),
+                child: const Text('Koi nahi'),
+              ),
+              const Spacer(),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(minimumSize: const Size(120, 48)),
+                onPressed: () => Navigator.pop(context, result),
+                child: Text(result.isEmpty ? 'Done' : 'Chuno: ${result.replaceAll(kCategorySeparator, ' › ')}'),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
