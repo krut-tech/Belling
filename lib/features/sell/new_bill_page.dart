@@ -276,6 +276,12 @@ class _NewBillPageState extends ConsumerState<NewBillPage> {
                 ));
               },
             ),
+          if (billState.lines.isNotEmpty && !showPicker)
+            TextButton.icon(
+              onPressed: () => setState(() => _showBill = false),
+              icon: const Icon(Icons.add),
+              label: const Text('Add items'),
+            ),
           if (billState.lines.isNotEmpty)
             IconButton(
               constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
@@ -403,28 +409,6 @@ class _NewBillPageState extends ConsumerState<NewBillPage> {
                   billState.error!,
                   style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
                   textAlign: TextAlign.center,
-                ),
-              ),
-
-            // Bill view header: back to picking more items
-            if (billState.lines.isNotEmpty && !showPicker)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 8, 0),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        'Bill (${billState.lines.length} items)',
-                        style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
-                      ),
-                    ),
-                    TextButton.icon(
-                      style: TextButton.styleFrom(visualDensity: VisualDensity.compact),
-                      onPressed: () => setState(() => _showBill = false),
-                      icon: const Icon(Icons.add, size: 18),
-                      label: const Text('Add items'),
-                    ),
-                  ],
                 ),
               ),
 
