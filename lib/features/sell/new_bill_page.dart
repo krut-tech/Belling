@@ -406,18 +406,25 @@ class _NewBillPageState extends ConsumerState<NewBillPage> {
                 ),
               ),
 
-            // Items | Bill switch
-            if (billState.lines.isNotEmpty)
+            // Bill view header: back to picking more items
+            if (billState.lines.isNotEmpty && !showPicker)
               Padding(
-                padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
-                child: SegmentedButton<bool>(
-                  showSelectedIcon: false,
-                  segments: [
-                    const ButtonSegment(value: false, label: Text('Items'), icon: Icon(Icons.grid_view_rounded, size: 18)),
-                    ButtonSegment(value: true, label: Text('Bill (${billState.lines.length})'), icon: const Icon(Icons.receipt_long, size: 18)),
+                padding: const EdgeInsets.fromLTRB(16, 0, 8, 0),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'Bill (${billState.lines.length} items)',
+                        style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
+                      ),
+                    ),
+                    TextButton.icon(
+                      style: TextButton.styleFrom(visualDensity: VisualDensity.compact),
+                      onPressed: () => setState(() => _showBill = false),
+                      icon: const Icon(Icons.add, size: 18),
+                      label: const Text('Add items'),
+                    ),
                   ],
-                  selected: {!showPicker},
-                  onSelectionChanged: (v) => setState(() => _showBill = v.first),
                 ),
               ),
 
@@ -1110,7 +1117,7 @@ class _CustomerNameFieldState extends ConsumerState<_CustomerNameField> {
       if (next.isEmpty && _c.text.isNotEmpty) _c.clear();
     });
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
       child: TextField(
         controller: _c,
         textCapitalization: TextCapitalization.words,
@@ -1119,6 +1126,7 @@ class _CustomerNameFieldState extends ConsumerState<_CustomerNameField> {
           labelText: 'Customer name (optional)',
           prefixIcon: Icon(Icons.badge_outlined),
           isDense: true,
+          contentPadding: EdgeInsets.symmetric(vertical: 10, horizontal: 12),
           border: OutlineInputBorder(),
         ),
         onChanged: (v) => ref.read(newBillProvider.notifier).setCustomerName(v),
