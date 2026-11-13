@@ -2,6 +2,8 @@ import 'package:flutter/material.dart' hide Text;
 import '../../core/widgets/motion.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/theme/app_colors.dart';
+import '../../core/widgets/belling_ui.dart';
 import '../../sync/auth_sync_service.dart';
 import '../../sync/profile_sync_service.dart';
 import '../../sync/sync_chip.dart';
@@ -261,60 +263,55 @@ class _BackupAndSyncPageState extends ConsumerState<BackupAndSyncPage> {
     final userEmail = authService.currentUser?.email ?? '';
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Backup and Sync'),
-        actions: const [
-          Padding(
-            padding: EdgeInsets.only(right: 16),
-            child: SyncChip(),
-          ),
-        ],
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+      body: SafeArea(
+        child: Column(
+          children: [
+            const BellingHeader(
+              title: 'Backup and Sync',
+              showBack: true,
+              actions: [SyncChip()],
+            ),
+            Expanded(
+              child: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: staggered([
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Row(
-                  children: [
-                    const Icon(Icons.cloud, size: 32, color: Colors.blue),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Cloud Backup & Multi-Device Sync',
-                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            isSignedIn
-                                ? 'Signed in as $userEmail'
-                                : 'Sign in to automatically sync invoices and inventory across devices.',
-                            style: TextStyle(color: Colors.grey.shade700, fontSize: 13),
-                          ),
-                        ],
-                      ),
+            HeroCard(
+              child: Row(
+                children: [
+                  const Icon(Icons.cloud, size: 32, color: Colors.white),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Cloud Backup & Multi-Device Sync',
+                          style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16, color: Colors.white),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          isSignedIn
+                              ? 'Signed in as $userEmail'
+                              : 'Sign in to automatically sync invoices and inventory across devices.',
+                          style: const TextStyle(color: Color(0xB3FFFFFF), fontSize: 13),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
             const SizedBox(height: 16),
             if (isSignedIn) ...[
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
+              SoftCard(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
                         children: [
-                          const Icon(Icons.account_circle, color: Colors.green),
+                          const Icon(Icons.account_circle, color: AppColors.lightSuccess),
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
@@ -346,7 +343,7 @@ class _BackupAndSyncPageState extends ConsumerState<BackupAndSyncPage> {
                           const SizedBox(width: 12),
                           Expanded(
                             child: ElevatedButton.icon(
-                              style: ElevatedButton.styleFrom(backgroundColor: Colors.red.shade100, foregroundColor: Colors.red.shade900),
+                              style: ElevatedButton.styleFrom(backgroundColor: AppColors.dueBg, foregroundColor: AppColors.lightDanger),
                               onPressed: _handleSignOut,
                               icon: const Icon(Icons.logout),
                               label: const Text('Sign Out'),
@@ -356,12 +353,9 @@ class _BackupAndSyncPageState extends ConsumerState<BackupAndSyncPage> {
                       ),
                     ],
                   ),
-                ),
               ),
             ] else ...[
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
+              SoftCard(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
@@ -393,7 +387,7 @@ class _BackupAndSyncPageState extends ConsumerState<BackupAndSyncPage> {
                         const SizedBox(height: 12),
                         Text(
                           _errorMessage!,
-                          style: TextStyle(color: Theme.of(context).colorScheme.error, fontSize: 13),
+                          style: const TextStyle(color: AppColors.lightDanger, fontSize: 13),
                         ),
                       ],
                       const SizedBox(height: 16),
@@ -428,10 +422,13 @@ class _BackupAndSyncPageState extends ConsumerState<BackupAndSyncPage> {
                       ),
                     ],
                   ),
-                ),
               ),
             ],
           ]),
+        ),
+      ),
+            ),
+          ],
         ),
       ),
     );

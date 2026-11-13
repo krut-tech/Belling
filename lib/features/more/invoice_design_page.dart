@@ -9,6 +9,8 @@ import 'package:printing/printing.dart' show PdfPreview;
 
 import '../../core/invoice_pdf.dart';
 import '../../core/invoice_style.dart';
+import '../../core/theme/app_colors.dart';
+import '../../core/widgets/belling_ui.dart';
 import '../../data/database.dart';
 import '../../data/providers.dart';
 import '../../core/tr_text.dart';
@@ -185,12 +187,24 @@ class _InvoiceDesignPageState extends ConsumerState<InvoiceDesignPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Bill design & paper')),
-      body: !_loaded
+      body: SafeArea(
+        child: Column(
+          children: [
+            const BellingHeader(
+              title: 'Bill design & paper',
+              subtitle: 'Paper, logo, stationery, colours',
+              showBack: true,
+            ),
+            Expanded(
+              child: !_loaded
           ? const Center(child: CircularProgressIndicator())
           : ListView(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
               children: [
+                SoftCard(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
                 const Text(
                   'Preview (sample bill)',
                   style: TextStyle(fontWeight: FontWeight.bold),
@@ -224,7 +238,14 @@ class _InvoiceDesignPageState extends ConsumerState<InvoiceDesignPage> {
                   'Design only changes how the bill looks. Amounts, GST and bill numbers always come from the issued bill.',
                   style: TextStyle(fontSize: 12),
                 ),
-                const SizedBox(height: 16),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 14),
+                SoftCard(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
                 _section('Paper'),
                 DropdownButtonFormField<InvoicePaper>(
                   initialValue: _style.paper,
@@ -263,7 +284,14 @@ class _InvoiceDesignPageState extends ConsumerState<InvoiceDesignPage> {
                     if (v != null) _apply(_style.copyWith(layout: v));
                   },
                 ),
-                const SizedBox(height: 16),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 14),
+                SoftCard(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
                 _section('Your own stationary / letterhead'),
                 const Text(
                   'Upload your pre-printed design (PNG, JPG or PDF). The bill is printed on top of it. '
@@ -299,13 +327,27 @@ class _InvoiceDesignPageState extends ConsumerState<InvoiceDesignPage> {
                     onSelectionChanged: (s) => _apply(_style.copyWith(backgroundFit: s.first)),
                   ),
                 ],
-                const SizedBox(height: 16),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 14),
+                SoftCard(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
                 _section('Margins (mm)'),
                 _slider('Top', _style.marginTopMm, 0, 60, (v) => _style.copyWith(marginTopMm: v)),
                 _slider('Bottom', _style.marginBottomMm, 0, 60, (v) => _style.copyWith(marginBottomMm: v)),
                 _slider('Left', _style.marginLeftMm, 0, 40, (v) => _style.copyWith(marginLeftMm: v)),
                 _slider('Right', _style.marginRightMm, 0, 40, (v) => _style.copyWith(marginRightMm: v)),
-                const SizedBox(height: 8),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 14),
+                SoftCard(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
                 _section('Look'),
                 Wrap(
                   spacing: 10,
@@ -330,7 +372,14 @@ class _InvoiceDesignPageState extends ConsumerState<InvoiceDesignPage> {
                 ),
                 const SizedBox(height: 8),
                 _slider('Text size', _style.fontScale, 0.7, 1.5, (v) => _style.copyWith(fontScale: v), suffix: '×'),
-                const SizedBox(height: 8),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 14),
+                SoftCard(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
                 _section('Logo'),
                 Wrap(
                   spacing: 8,
@@ -349,32 +398,45 @@ class _InvoiceDesignPageState extends ConsumerState<InvoiceDesignPage> {
                       ),
                   ],
                 ),
-                const SizedBox(height: 8),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 14),
+                SoftCard(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
                 _section('Show on bill'),
                 _toggle('Logo', _style.showLogo, (v) => _apply(_style.copyWith(showLogo: v), reloadAssets: true)),
                 _toggle('HSN column', _style.showHsn, (v) => _apply(_style.copyWith(showHsn: v))),
                 _toggle('UPI QR code', _style.showQr, (v) => _apply(_style.copyWith(showQr: v))),
                 _toggle('Terms & conditions', _style.showTerms, (v) => _apply(_style.copyWith(showTerms: v))),
                 _toggle('Signature box', _style.showSignature, (v) => _apply(_style.copyWith(showSignature: v))),
-                const SizedBox(height: 12),
+                                    ],
+                  ),
+                ),
                 OutlinedButton.icon(
                   onPressed: () => _apply(InvoiceStyle.classicDefault.copyWith(), reloadAssets: true),
                   icon: const Icon(Icons.restart_alt),
                   label: const Text('Reset to default look'),
                 ),
-                const SizedBox(height: 24),
               ],
             ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
   Widget _section(String title) => Padding(
         padding: const EdgeInsets.only(bottom: 8, top: 4),
-        child: Text(title, style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+        child: Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
       );
 
   Widget _toggle(String label, bool value, ValueChanged<bool> onChanged) => SwitchListTile(
         contentPadding: EdgeInsets.zero,
+        activeTrackColor: AppColors.accent,
         title: Text(label),
         value: value,
         onChanged: onChanged,

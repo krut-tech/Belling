@@ -2,6 +2,8 @@ import 'package:flutter/material.dart' hide Text;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/money.dart';
+import '../../core/theme/app_colors.dart';
+import '../../core/widgets/belling_ui.dart';
 import '../../data/providers.dart';
 import '../../data/records.dart';
 import '../../data/repositories/product_repository.dart';
@@ -58,10 +60,11 @@ class _ItemDetailsPageState extends ConsumerState<ItemDetailsPage> {
     final categories = {for (final m in metas.values) if (m.str('category').isNotEmpty) m.str('category')}.toList()..sort();
 
     return Scaffold(
-      appBar: AppBar(title: Text('Item details (category, unit, MRP)')),
-      body: Column(children: [
+      body: SafeArea(
+        child: Column(children: [
+        const BellingHeader(title: 'Item details (category, unit, MRP)', showBack: true),
         Padding(
-          padding: EdgeInsets.fromLTRB(12, 8, 12, 4),
+          padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
           child: TextField(
             decoration: InputDecoration(prefixIcon: Icon(Icons.search), hintText: tr(context, 'Item dhundo')),
             onChanged: (v) => setState(() => _q = v),
@@ -70,7 +73,7 @@ class _ItemDetailsPageState extends ConsumerState<ItemDetailsPage> {
         if (categories.isNotEmpty)
           SizedBox(
             height: 46,
-            child: ListView(scrollDirection: Axis.horizontal, padding: const EdgeInsets.symmetric(horizontal: 12), children: [
+            child: ListView(scrollDirection: Axis.horizontal, padding: const EdgeInsets.symmetric(horizontal: 16), children: [
               Padding(
                 padding: const EdgeInsets.only(right: 8),
                 child: ChoiceChip(label: const Text('Sab'), selected: _category == null, onSelected: (_) => setState(() => _category = null)),
@@ -88,6 +91,7 @@ class _ItemDetailsPageState extends ConsumerState<ItemDetailsPage> {
               final shown = list.where((p) => _category == null || metas[p.product.id]?.str('category') == _category).toList();
               if (shown.isEmpty) return const Center(child: Text('Koi item nahi'));
               return ListView.builder(
+                padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
                 itemCount: shown.length,
                 itemBuilder: (_, i) {
                   final p = shown[i];
@@ -97,11 +101,31 @@ class _ItemDetailsPageState extends ConsumerState<ItemDetailsPage> {
                     if (m != null && m.str('unit').isNotEmpty) m.str('unit'),
                     if (m != null && m.integer('mrp_paise') > 0) 'MRP ${formatRupees(m.integer('mrp_paise'))}',
                   ];
-                  return ListTile(
-                    title: Text(p.product.name),
-                    subtitle: Text(extra.isEmpty ? 'Details set nahi' : extra.join(' · ')),
-                    trailing: const Icon(Icons.edit_outlined),
-                    onTap: () => _edit(p, m),
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: SoftCard(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      onTap: () => _edit(p, m),
+                      child: Row(
+                        children: [
+                          MonoTile(initialsOf(p.product.name), color: tileColorFor(p.product.name)),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(p.product.name, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
+                                const SizedBox(height: 2),
+                                Text(extra.isEmpty ? 'Details set nahi' : extra.join(' · '),
+                                    style: const TextStyle(
+                                        color: AppColors.lightMuted, fontSize: 12, fontWeight: FontWeight.w600)),
+                              ],
+                            ),
+                          ),
+                          const Icon(Icons.edit_outlined, color: AppColors.lightMuted),
+                        ],
+                      ),
+                    ),
                   );
                 },
               );
@@ -111,6 +135,7 @@ class _ItemDetailsPageState extends ConsumerState<ItemDetailsPage> {
           ),
         ),
       ]),
+      ),
     );
   }
 }

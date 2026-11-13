@@ -121,15 +121,26 @@ class _AppLockGateState extends ConsumerState<AppLockGate> with WidgetsBindingOb
     if (!_loaded) return const ColoredBox(color: AppColors.lightBackground);
     if (!_locked) return widget.child;
 
-    Widget key(String label, VoidCallback? onTap, {IconData? icon}) => SizedBox(
-          width: 76,
-          height: 64,
-          child: TextButton(
-            onPressed: onTap,
-            style: TextButton.styleFrom(shape: const CircleBorder()),
-            child: icon != null
-                ? Icon(icon, color: AppColors.ink)
-                : Text(label, style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w700, color: AppColors.ink)),
+    Widget key(String label, VoidCallback? onTap, {IconData? icon}) => Padding(
+          padding: const EdgeInsets.all(5),
+          child: SizedBox(
+            width: 76,
+            height: 64,
+            child: onTap == null && icon == null
+                ? null
+                : TextButton(
+                    onPressed: onTap,
+                    style: TextButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20),
+                        side: const BorderSide(color: AppColors.lightBorder),
+                      ),
+                    ),
+                    child: icon != null
+                        ? Icon(icon, color: AppColors.ink)
+                        : Text(label, style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w700, color: AppColors.ink)),
+                  ),
           ),
         );
 
@@ -141,8 +152,17 @@ class _AppLockGateState extends ConsumerState<AppLockGate> with WidgetsBindingOb
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.lock_outline, size: 44, color: AppColors.lightPrimary),
-                const SizedBox(height: 12),
+                Container(
+                  width: 64,
+                  height: 64,
+                  decoration: BoxDecoration(
+                    gradient: AppColors.accentGradient,
+                    borderRadius: BorderRadius.circular(22),
+                    boxShadow: const [BoxShadow(color: Color(0x59FF6A1F), blurRadius: 24, offset: Offset(0, 10))],
+                  ),
+                  child: const Icon(Icons.lock_outline, size: 30, color: Colors.white),
+                ),
+                const SizedBox(height: 14),
                 const Text('PIN daalo', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: AppColors.ink)),
                 const SizedBox(height: 18),
                 Row(
@@ -155,8 +175,8 @@ class _AppLockGateState extends ConsumerState<AppLockGate> with WidgetsBindingOb
                         height: 14,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: i < _entry.length ? AppColors.lightPrimary : Colors.transparent,
-                          border: Border.all(color: AppColors.lightPrimary, width: 1.6),
+                          color: i < _entry.length ? AppColors.accent : Colors.transparent,
+                          border: Border.all(color: i < _entry.length ? AppColors.accent : AppColors.lightBorder, width: 1.6),
                         ),
                       ),
                   ],
@@ -165,7 +185,7 @@ class _AppLockGateState extends ConsumerState<AppLockGate> with WidgetsBindingOb
                   height: 28,
                   child: _error == null
                       ? null
-                      : Center(child: Text(_error!, style: const TextStyle(color: Colors.red, fontWeight: FontWeight.w600))),
+                      : Center(child: Text(_error!, style: const TextStyle(color: AppColors.lightDanger, fontWeight: FontWeight.w600))),
                 ),
                 const SizedBox(height: 8),
                 for (final r in const [

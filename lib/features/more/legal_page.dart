@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../../core/theme/app_colors.dart';
+import '../../core/widgets/belling_ui.dart';
+
 /// Plain-language privacy and compliance notes shown inside the app.
 class LegalPage extends StatelessWidget {
   const LegalPage({super.key});
@@ -50,19 +53,33 @@ class LegalPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final t = Theme.of(context).textTheme;
     return Scaffold(
-      appBar: AppBar(title: const Text('Privacy & legal')),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          for (final s in _sections) ...[
-            Text(s.$1, style: t.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 6),
-            Text(s.$2, style: t.bodyMedium),
-            const SizedBox(height: 18),
+      body: SafeArea(
+        child: Column(
+          children: [
+            const BellingHeader(title: 'Privacy & legal', showBack: true),
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                children: [
+                  for (final s in _sections) ...[
+                    SoftCard(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(s.$1, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
+                          const SizedBox(height: 6),
+                          Text(s.$2, style: const TextStyle(fontSize: 14, height: 1.4, color: AppColors.lightMuted)),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                  ],
+                ],
+              ),
+            ),
           ],
-        ],
+        ),
       ),
     );
   }

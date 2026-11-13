@@ -2,6 +2,8 @@ import 'package:flutter/material.dart' hide Text;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../core/theme/app_colors.dart';
+import '../../core/widgets/belling_ui.dart';
 import '../../data/providers.dart';
 import '../../core/tr_text.dart';
 import '../../core/tr.dart';
@@ -149,26 +151,63 @@ class _StaffPageState extends ConsumerState<StaffPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Staff & roles')),
-      floatingActionButton: _client == null ? null : FloatingActionButton.extended(onPressed: _add, icon: const Icon(Icons.person_add), label: const Text('Staff add')),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator())
-          : _error != null
-              ? Center(child: Padding(padding: const EdgeInsets.all(24), child: Text(_error!, textAlign: TextAlign.center)))
-              : ListView(
-                  padding: const EdgeInsets.fromLTRB(12, 12, 12, 90),
-                  children: [
-                    for (final m in _members ?? const <_Member>[])
-                      Card(
-                        child: ListTile(
-                          leading: const CircleAvatar(child: Icon(Icons.person)),
-                          title: Text(m.email),
-                          subtitle: Text(_roleLabels[m.role] ?? m.role),
-                          trailing: m.role == 'owner' ? null : IconButton(icon: const Icon(Icons.close), onPressed: () => _remove(m)),
+      floatingActionButton: _client == null
+          ? null
+          : FloatingActionButton.extended(
+              backgroundColor: AppColors.accent,
+              foregroundColor: Colors.white,
+              onPressed: _add,
+              icon: const Icon(Icons.person_add),
+              label: const Text('Staff add', style: TextStyle(fontWeight: FontWeight.w800))),
+      body: SafeArea(
+        child: Column(
+          children: [
+            const BellingHeader(title: 'Staff & roles', subtitle: 'Kaun kya dekh sakta hai', showBack: true),
+            Expanded(
+              child: _loading
+                  ? const Center(child: CircularProgressIndicator())
+                  : _error != null
+                      ? Center(child: Padding(padding: const EdgeInsets.all(24), child: Text(_error!, textAlign: TextAlign.center)))
+                      : ListView(
+                          padding: const EdgeInsets.fromLTRB(16, 8, 16, 96),
+                          children: [
+                            for (final m in _members ?? const <_Member>[])
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 12),
+                                child: SoftCard(
+                                  child: Row(
+                                    children: [
+                                      MonoTile(initialsOf(m.email), color: tileColorFor(m.email), size: 46),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(m.email,
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                                style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
+                                            const SizedBox(height: 2),
+                                            Text(_roleLabels[m.role] ?? m.role,
+                                                style: const TextStyle(
+                                                    color: AppColors.lightMuted, fontSize: 12, fontWeight: FontWeight.w600)),
+                                          ],
+                                        ),
+                                      ),
+                                      if (m.role == 'owner')
+                                        StatusBadge.good('Owner')
+                                      else
+                                        IconButton(icon: const Icon(Icons.close), onPressed: () => _remove(m)),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                          ],
                         ),
-                      ),
-                  ],
-                ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

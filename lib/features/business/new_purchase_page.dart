@@ -2,6 +2,8 @@ import 'package:flutter/material.dart' hide Text;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/money.dart';
+import '../../core/theme/app_colors.dart';
+import '../../core/widgets/belling_ui.dart';
 import '../../data/providers.dart';
 import '../../data/records.dart';
 import '../../data/repositories/business_repository.dart';
@@ -94,57 +96,120 @@ class _NewPurchasePageState extends ConsumerState<NewPurchasePage> {
 
   @override
   Widget build(BuildContext context) {
+    final paidNow = _paid.text.trim().isEmpty
+        ? _total
+        : (parseRupeesToPaise(_paid.text.replaceAll(RegExp(r'[,₹\s]'), '')) ?? _total);
+    final dueLeft = (_total - paidNow) < 0 ? 0 : (_total - paidNow);
     return Scaffold(
-      appBar: AppBar(title: const Text('Naya purchase')),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          DropdownButtonFormField<String?>(
-            initialValue: _supplierId,
-            decoration: const InputDecoration(labelText: 'Supplier'),
-            items: [
-              const DropdownMenuItem<String?>(value: null, child: Text('Koi nahi / cash purchase')),
-              for (final s in _suppliers) DropdownMenuItem<String?>(value: s.id, child: Text(s.str('name'))),
-            ],
-            onChanged: (v) => setState(() => _supplierId = v),
-          ),
-          const SizedBox(height: 10),
-          TextField(controller: _billNo, decoration: const InputDecoration(labelText: 'Supplier bill number (optional)')),
-          const SizedBox(height: 16),
-          Row(children: [
-            const Expanded(child: Text('Items', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16))),
-            FilledButton.tonalIcon(onPressed: _addLine, icon: const Icon(Icons.add), label: const Text('Item add')),
-          ]),
-          const SizedBox(height: 8),
-          if (_lines.isEmpty) const Padding(padding: EdgeInsets.all(16), child: Text('Item add karo')),
-          for (var i = 0; i < _lines.length; i++)
-            Card(
-              child: ListTile(
-                title: Text(_lines[i].name),
-                subtitle: Text('${formatMilliUnits(_lines[i].qtyMilli)} × ${formatRupees(_lines[i].costPaise)}'),
-                trailing: Row(mainAxisSize: MainAxisSize.min, children: [
-                  Text(formatRupees(_lines[i].amountPaise), style: const TextStyle(fontWeight: FontWeight.w800)),
-                  IconButton(icon: const Icon(Icons.close), onPressed: () => setState(() => _lines.removeAt(i))),
-                ]),
+      body: SafeArea(
+        child: Column(
+          children: [
+            const BellingHeader(title: 'Naya purchase', subtitle: 'Supplier se maal kharido', showBack: true),
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                children: [
+                  SoftCard(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        DropdownButtonFormField<String?>(
+                          initialValue: _supplierId,
+                          decoration: const InputDecoration(labelText: 'Supplier'),
+                          items: [
+                            const DropdownMenuItem<String?>(value: null, child: Text('Koi nahi / cash purchase')),
+                            for (final s in _suppliers) DropdownMenuItem<String?>(value: s.id, child: Text(s.str('name'))),
+                          ],
+                          onChanged: (v) => setState(() => _supplierId = v),
+                        ),
+                        const SizedBox(height: 10),
+                        TextField(controller: _billNo, decoration: const InputDecoration(labelText: 'Supplier bill number (optional)')),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  SoftCard(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(children: [
+                          const Expanded(child: Text('Items', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 17))),
+                          TextButton.icon(
+                            style: TextButton.styleFrom(foregroundColor: AppColors.accent),
+                            onPressed: _addLine,
+                            icon: const Icon(Icons.add),
+                            label: const Text('Item add', style: TextStyle(fontWeight: FontWeight.w800)),
+                          ),
+                        ]),
+                        if (_lines.isEmpty) const Padding(padding: EdgeInsets.all(16), child: Text('Item add karo')),
+                        for (var i = 0; i < _lines.length; i++)
+                          Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 6),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(_lines[i].name, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
+                                      const SizedBox(height: 2),
+                                      Text('${formatMilliUnits(_lines[i].qtyMilli)} × ${formatRupees(_lines[i].costPaise)}',
+                                          style: const TextStyle(
+                                              color: AppColors.lightMuted, fontSize: 12, fontWeight: FontWeight.w600)),
+                                    ],
+                                  ),
+                                ),
+                                Text(formatRupees(_lines[i].amountPaise),
+                                    style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
+                                IconButton(icon: const Icon(Icons.close), onPressed: () => setState(() => _lines.removeAt(i))),
+                              ],
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  TextField(
+                    controller: _paid,
+                    onChanged: (_) => setState(() {}),
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    decoration: InputDecoration(
+                      labelText: tr(context, 'Abhi kitna diya (₹)'),
+                      helperText: 'Khali chhodo = poora ${formatRupees(_total)} diya',
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  SoftCard(
+                    child: Column(
+                      children: [
+                        Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                          const Text('Total', style: TextStyle(fontWeight: FontWeight.w700)),
+                          Text(formatRupees(_total), style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800)),
+                        ]),
+                        if (_lines.isNotEmpty) ...[
+                          const SizedBox(height: 8),
+                          Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                            const Text('Baaki rahega',
+                                style: TextStyle(color: AppColors.lightMuted, fontWeight: FontWeight.w600)),
+                            Text(formatRupees(dueLeft),
+                                style: const TextStyle(color: AppColors.lightDanger, fontWeight: FontWeight.w800)),
+                          ]),
+                        ],
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  GradientButton(
+                    label: _saving ? 'Save ho raha hai...' : 'Purchase save karo (stock badhega)',
+                    icon: _saving ? null : Icons.check,
+                    expand: true,
+                    onPressed: _saving || _lines.isEmpty ? null : _save,
+                  ),
+                ],
               ),
             ),
-          const Divider(height: 28),
-          Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-            const Text('Total', style: TextStyle(fontWeight: FontWeight.w700)),
-            Text(formatRupees(_total), style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800)),
-          ]),
-          SizedBox(height: 10),
-          TextField(
-            controller: _paid,
-            keyboardType: TextInputType.numberWithOptions(decimal: true),
-            decoration: InputDecoration(labelText: tr(context, 'Abhi kitna diya (₹)'), helperText: 'Khali chhodo = poora ${formatRupees(_total)} diya'),
-          ),
-          const SizedBox(height: 20),
-          FilledButton(
-            onPressed: _saving || _lines.isEmpty ? null : _save,
-            child: Padding(padding: const EdgeInsets.all(14), child: Text(_saving ? 'Save ho raha hai...' : 'Purchase save karo (stock badhega)')),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

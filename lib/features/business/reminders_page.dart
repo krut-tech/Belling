@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/money.dart';
 import '../../core/reminder_service.dart';
+import '../../core/theme/app_colors.dart';
+import '../../core/widgets/belling_ui.dart';
 import '../../data/providers.dart';
 import '../parties/dues_reminder_sheet.dart';
 import '../../core/tr_text.dart';
@@ -15,45 +17,104 @@ class RemindersPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final async = ref.watch(partiesWithBalanceStreamProvider(''));
     return Scaffold(
-      appBar: AppBar(title: const Text('Udhar reminders')),
-      body: async.when(
-        data: (all) {
-          final owing = all.where((p) => p.balancePaise > 0).toList()..sort((a, b) => b.balancePaise.compareTo(a.balancePaise));
-          if (owing.isEmpty) {
-            return ListView(padding: const EdgeInsets.all(12), children: const [
-              _AutoReminderCard(),
-              Padding(padding: EdgeInsets.all(24), child: Center(child: Text('Kisi ka udhar baaki nahi. 🎉'))),
-            ]);
-          }
-          final total = owing.fold<int>(0, (a, p) => a + p.balancePaise);
-          return ListView(
-            padding: const EdgeInsets.all(12),
-            children: [
-              const _AutoReminderCard(),
-              Card(
-                child: ListTile(
-                  title: Text('${owing.length} log ka udhar baaki'),
-                  trailing: Text(formatRupees(total), style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: Colors.red)),
-                ),
+      body: SafeArea(
+        child: Column(
+          children: [
+            BellingHeader(
+              title: 'Udhar reminders',
+              subtitle: async.maybeWhen(
+                data: (all) {
+                  final owing = all.where((p) => p.balancePaise > 0).toList();
+                  if (owing.isEmpty) return null;
+                  final total = owing.fold<int>(0, (a, p) => a + p.balancePaise);
+                  return '${owing.length} log ka udhar baaki - ${formatRupees(total)}';
+                },
+                orElse: () => null,
               ),
-              for (final p in owing)
-                Card(
-                  child: ListTile(
-                    title: Text(p.party.name, style: const TextStyle(fontWeight: FontWeight.w700)),
-                    subtitle: Text(formatRupees(p.balancePaise)),
-                    trailing: FilledButton.icon(
-                      style: FilledButton.styleFrom(backgroundColor: const Color(0xFF16A34A)),
-                      onPressed: () => showDuesReminderSheet(context, partyId: p.party.id),
-                      icon: const Icon(Icons.send, size: 16),
-                      label: const Text('Reminder'),
-                    ),
-                  ),
-                ),
-            ],
-          );
-        },
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('$e')),
+              showBack: true,
+            ),
+            Expanded(
+              child: async.when(
+                data: (all) {
+                  final owing = all.where((p) => p.balancePaise > 0).toList()..sort((a, b) => b.balancePaise.compareTo(a.balancePaise));
+                  if (owing.isEmpty) {
+                    return ListView(padding: const EdgeInsets.fromLTRB(16, 8, 16, 24), children: const [
+                      _AutoReminderCard(),
+                      Padding(padding: EdgeInsets.all(24), child: Center(child: Text('Kisi ka udhar baaki nahi. 🎉'))),
+                    ]);
+                  }
+                  final total = owing.fold<int>(0, (a, p) => a + p.balancePaise);
+                  return ListView(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                    children: [
+                      const _AutoReminderCard(),
+                      HeroCard(
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text('${owing.length} log ka udhar baaki',
+                                      style: const TextStyle(color: Color(0xB3FFFFFF), fontSize: 13, fontWeight: FontWeight.w600)),
+                                  const SizedBox(height: 6),
+                                  Text(formatRupees(total),
+                                      style: const TextStyle(
+                                          color: Colors.white, fontSize: 32, fontWeight: FontWeight.w800, letterSpacing: -0.6)),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+                      SoftCard(
+                        padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
+                        child: Column(
+                          children: [
+                            for (final p in owing)
+                              Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 8),
+                                child: Row(
+                                  children: [
+                                    MonoTile(initialsOf(p.party.name), color: tileColorFor(p.party.name)),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(p.party.name,
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
+                                          const SizedBox(height: 2),
+                                          Text(formatRupees(p.balancePaise),
+                                              style: const TextStyle(
+                                                  color: AppColors.lightDanger, fontWeight: FontWeight.w800, fontSize: 13)),
+                                        ],
+                                      ),
+                                    ),
+                                    FilledButton.icon(
+                                      style: FilledButton.styleFrom(backgroundColor: AppColors.whatsappGreen),
+                                      onPressed: () => showDuesReminderSheet(context, partyId: p.party.id),
+                                      icon: const Icon(Icons.send, size: 16),
+                                      label: const Text('Reminder'),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  );
+                },
+                loading: () => const Center(child: CircularProgressIndicator()),
+                error: (e, _) => Center(child: Text('$e')),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -124,30 +185,39 @@ class _AutoReminderCardState extends ConsumerState<_AutoReminderCard> {
   @override
   Widget build(BuildContext context) {
     if (!_loaded) return const SizedBox.shrink();
-    return Card(
-      child: Column(children: [
-        SwitchListTile(
-          secondary: const Icon(Icons.notifications_active_outlined),
-          title: const Text('Roz ka auto reminder', style: TextStyle(fontWeight: FontWeight.w700)),
-          subtitle: const Text('Roz ek notification: kitne logon ka udhar baaki hai'),
-          value: _on,
-          onChanged: _toggle,
-        ),
-        if (_on)
-          ListTile(
-            leading: const Icon(Icons.schedule),
-            title: const Text('Kab bhejna hai'),
-            trailing: Text('${_hour.toString().padLeft(2, '0')}:00', style: const TextStyle(fontWeight: FontWeight.w800)),
-            onTap: _pickTime,
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 14),
+      child: SoftCard(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Column(children: [
+          SwitchListTile(
+            secondary: const IconTile(
+              icon: Icons.notifications_active_outlined,
+              color: AppColors.lightSuccess,
+              background: AppColors.goodBg,
+            ),
+            activeTrackColor: AppColors.accent,
+            title: const Text('Roz ka auto reminder', style: TextStyle(fontWeight: FontWeight.w800)),
+            subtitle: const Text('Roz ek notification: kitne logon ka udhar baaki hai'),
+            value: _on,
+            onChanged: _toggle,
           ),
-        const Padding(
-          padding: EdgeInsets.fromLTRB(16, 0, 16, 12),
-          child: Text(
-            'Notification ka number app khulne aur band hone par update hota hai. Customer ko message khud nahi jata, aap notification tap karke reminder bhejte ho.',
-            style: TextStyle(fontSize: 12),
+          if (_on)
+            ListTile(
+              leading: const Icon(Icons.schedule),
+              title: const Text('Kab bhejna hai'),
+              trailing: Text('${_hour.toString().padLeft(2, '0')}:00', style: const TextStyle(fontWeight: FontWeight.w800)),
+              onTap: _pickTime,
+            ),
+          const Padding(
+            padding: EdgeInsets.fromLTRB(16, 0, 16, 8),
+            child: Text(
+              'Notification ka number app khulne aur band hone par update hota hai. Customer ko message khud nahi jata, aap notification tap karke reminder bhejte ho.',
+              style: TextStyle(fontSize: 12, color: AppColors.lightMuted),
+            ),
           ),
-        ),
-      ]),
+        ]),
+      ),
     );
   }
 }

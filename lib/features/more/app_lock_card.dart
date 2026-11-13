@@ -2,6 +2,8 @@ import 'package:flutter/material.dart' hide Text;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/app_lock.dart';
+import '../../core/theme/app_colors.dart';
+import '../../core/widgets/belling_ui.dart';
 import '../../data/providers.dart';
 import 'app_lock_gate.dart';
 import '../../core/tr_text.dart';
@@ -97,48 +99,58 @@ class _AppLockCardState extends ConsumerState<AppLockCard> {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+    return SoftCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  gradient: AppColors.accentGradient,
+                  borderRadius: BorderRadius.circular(13),
+                ),
+                child: const Icon(Icons.lock_outline, color: Colors.white, size: 20),
+              ),
+              const SizedBox(width: 12),
+              const Text('App lock (PIN)', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
+              const Spacer(),
+              _enabled ? StatusBadge.good('ON') : const StatusBadge('OFF', color: AppColors.lightMuted, background: AppColors.lightBackground),
+            ],
+          ),
+          const SizedBox(height: 10),
+          const Text(
+            'Dukaan ka phone kisi ke haath mein jaye to bills aur udhar ka data safe rahe. PIN sirf is phone mein rehta hai.',
+            style: TextStyle(fontSize: 13, color: AppColors.lightMuted),
+          ),
+          const SizedBox(height: 12),
+          if (!_enabled)
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                style: FilledButton.styleFrom(backgroundColor: AppColors.accent),
+                onPressed: _setNew,
+                icon: const Icon(Icons.pin_outlined),
+                label: const Text('PIN lagao'),
+              ),
+            )
+          else
             Row(
               children: [
-                Icon(Icons.lock_outline, color: Theme.of(context).colorScheme.primary),
-                const SizedBox(width: 8),
-                Text('App lock (PIN)', style: Theme.of(context).textTheme.titleMedium),
-                const Spacer(),
-                Text(_enabled ? 'ON' : 'OFF', style: TextStyle(fontWeight: FontWeight.w800, color: _enabled ? Colors.green : Colors.grey)),
+                Expanded(child: OutlinedButton(onPressed: _change, child: const Text('PIN badlo'))),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: _remove,
+                    style: OutlinedButton.styleFrom(foregroundColor: AppColors.lightDanger),
+                    child: const Text('Hatao'),
+                  ),
+                ),
               ],
             ),
-            const SizedBox(height: 6),
-            const Text(
-              'Dukaan ka phone kisi ke haath mein jaye to bills aur udhar ka data safe rahe. PIN sirf is phone mein rehta hai.',
-              style: TextStyle(fontSize: 13),
-            ),
-            const SizedBox(height: 12),
-            if (!_enabled)
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton.icon(onPressed: _setNew, icon: const Icon(Icons.pin_outlined), label: const Text('PIN lagao')),
-              )
-            else
-              Row(
-                children: [
-                  Expanded(child: OutlinedButton(onPressed: _change, child: const Text('PIN badlo'))),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: _remove,
-                      style: OutlinedButton.styleFrom(foregroundColor: Colors.red),
-                      child: const Text('Hatao'),
-                    ),
-                  ),
-                ],
-              ),
-          ],
-        ),
+        ],
       ),
     );
   }
