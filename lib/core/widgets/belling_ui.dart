@@ -62,8 +62,10 @@ class SoftCard extends StatelessWidget {
           BoxShadow(color: Color(0x0A14152B), blurRadius: 24, offset: Offset(0, 8)),
         ],
       ),
-      padding: padding,
-      child: child,
+      child: Material(
+        type: MaterialType.transparency,
+        child: Padding(padding: padding, child: child),
+      ),
     );
     if (onTap == null) return box;
     return Material(
