@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart' hide Text;
+import '../../core/theme/app_colors.dart';
+import '../../core/widgets/belling_ui.dart';
 import '../../core/widgets/motion.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -27,194 +29,267 @@ class MorePage extends ConsumerWidget {
     final currentLocale = ref.watch(localeProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n.tabMore),
-        actions: const [
-          Padding(
-            padding: EdgeInsets.only(right: 16),
-            child: SyncChip(),
-          ),
-        ],
-      ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: staggered([
-          // Cloud Backup & Sync Section
-          Card(
-            child: ListTile(
-              leading: const Icon(Icons.cloud_sync, color: Colors.blue, size: 32),
-              title: const Text(
-                'Backup & Cloud Sync',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-              subtitle: const Text('Sign in, manage multi-device sync, and view sync status'),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () {
-                context.push('/more/backup-sync');
-              },
-            ),
-          ),
-          const SizedBox(height: 16),
-
-          // Bill design, paper size, stationary
-          Card(
-            child: ListTile(
-              leading: const Icon(Icons.receipt_long, color: Colors.deepPurple, size: 32),
-              title: const Text(
-                'Bill design & paper',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-              subtitle: const Text('Paper size, your own stationary/letterhead, logo, colours'),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () {
-                context.push('/more/invoice-design');
-              },
-            ),
-          ),
-          const SizedBox(height: 16),
-
-          // Business tools
-          Card(
-            child: Column(
-              children: [
-                ListTile(
-                  leading: const Icon(Icons.local_shipping_outlined, color: Colors.deepOrange),
-                  title: const Text('Supplier & purchase', style: TextStyle(fontWeight: FontWeight.bold)),
-                  subtitle: const Text('Maal kharido, stock badhao, supplier ko kitna dena hai'),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () => context.push('/more/suppliers'),
-                ),
-                const Divider(height: 1),
-                ListTile(
-                  leading: const Icon(Icons.request_quote_outlined, color: Colors.indigo),
-                  title: const Text('Estimates / quotation', style: TextStyle(fontWeight: FontWeight.bold)),
-                  subtitle: const Text('Bina bill kiye rate bhejo, baad mein bill mein badlo'),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () => context.push('/more/estimates'),
-                ),
-                const Divider(height: 1),
-                ListTile(
-                  leading: const Icon(Icons.payments_outlined, color: Colors.teal),
-                  title: const Text('Kharcha (expenses)', style: TextStyle(fontWeight: FontWeight.bold)),
-                  subtitle: const Text('Rent, salary, bijli ... net munafa mein ghatega'),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () => context.push('/more/expenses'),
-                ),
-                const Divider(height: 1),
-                ListTile(
-                  leading: const Icon(Icons.notifications_active_outlined, color: Colors.green),
-                  title: const Text('Udhar reminders', style: TextStyle(fontWeight: FontWeight.bold)),
-                  subtitle: const Text('Sabka baaki ek jagah, WhatsApp par PDF reminder'),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () => context.push('/more/reminders'),
-                ),
-                const Divider(height: 1),
-                ListTile(
-                  leading: const Icon(Icons.history_edu_outlined, color: Colors.deepOrange),
-                  title: const Text('All bills', style: TextStyle(fontWeight: FontWeight.bold)),
-                  subtitle: const Text('Saare purane bills, search aur filter. Kabhi delete nahi hote'),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () => context.push('/more/all-bills'),
-                ),
-                const Divider(height: 1),
-                ListTile(
-                  leading: const Icon(Icons.policy_outlined, color: Colors.blueGrey),
-                  title: const Text('Privacy & legal', style: TextStyle(fontWeight: FontWeight.bold)),
-                  subtitle: const Text('Data, GST records, customer privacy'),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () => context.push('/more/legal'),
-                ),
-                const Divider(height: 1),
-                ListTile(
-                  leading: const Icon(Icons.category_outlined, color: Colors.brown),
-                  title: const Text('Item details', style: TextStyle(fontWeight: FontWeight.bold)),
-                  subtitle: const Text('Category, unit aur MRP'),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () => context.push('/more/item-details'),
-                ),
-                const Divider(height: 1),
-                ListTile(
-                  leading: const Icon(Icons.badge_outlined, color: Colors.blueGrey),
-                  title: const Text('Staff & roles', style: TextStyle(fontWeight: FontWeight.bold)),
-                  subtitle: const Text('Cashier / manager / accountant access'),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () => context.push('/more/staff'),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-
-          // App lock
-          const AppLockCard(),
-          const SizedBox(height: 16),
-
-          // Bulk item import
-          const ItemsImportCard(),
-          const SizedBox(height: 16),
-
-          // App updates (GitHub releases)
-          const _UpdateCard(),
-          const SizedBox(height: 16),
-
-          // Business Settings
-          const _BusinessSettingsSection(),
-          const SizedBox(height: 16),
-
-          // Local Backup & Restore
-          const _BackupRestoreSection(),
-          const SizedBox(height: 16),
-
-          // Language Settings
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
+      body: SafeArea(
+        bottom: false,
+        child: Column(
+          children: [
+            BellingHeader(title: l10n.tabMore, actions: const [SyncChip()]),
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(18, 8, 18, 24),
+                children: staggered([
+                  // Quick tiles
+                  GridView.count(
+                    crossAxisCount: 3,
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    mainAxisSpacing: 12,
+                    crossAxisSpacing: 12,
+                    childAspectRatio: 1.05,
                     children: [
-                      const Icon(Icons.language),
-                      const SizedBox(width: 8),
-                      Text(
-                        l10n.language,
-                        style: Theme.of(context).textTheme.titleMedium,
+                      _MoreTile(
+                        icon: Icons.local_shipping_outlined,
+                        color: AppColors.violet,
+                        background: AppColors.violetBg,
+                        label: 'Purchase',
+                        onTap: () => context.push('/more/suppliers'),
+                      ),
+                      _MoreTile(
+                        icon: Icons.request_quote_outlined,
+                        color: AppColors.warn,
+                        background: AppColors.warnBg,
+                        label: 'Estimates',
+                        onTap: () => context.push('/more/estimates'),
+                      ),
+                      _MoreTile(
+                        icon: Icons.payments_outlined,
+                        color: AppColors.lightDanger,
+                        background: AppColors.dueBg,
+                        label: 'Kharcha',
+                        onTap: () => context.push('/more/expenses'),
+                      ),
+                      _MoreTile(
+                        icon: Icons.notifications_active_outlined,
+                        color: AppColors.lightSuccess,
+                        background: AppColors.goodBg,
+                        label: 'Reminders',
+                        onTap: () => context.push('/more/reminders'),
+                      ),
+                      _MoreTile(
+                        icon: Icons.receipt_long_outlined,
+                        color: AppColors.blue,
+                        background: AppColors.blueBg,
+                        label: 'All bills',
+                        onTap: () => context.push('/more/all-bills'),
+                      ),
+                      _MoreTile(
+                        icon: Icons.sell_outlined,
+                        color: AppColors.accent,
+                        background: AppColors.accentBg,
+                        label: 'Item info',
+                        onTap: () => context.push('/more/item-details'),
                       ),
                     ],
                   ),
                   const SizedBox(height: 16),
-                  SizedBox(
-                    width: double.infinity,
-                    child: SegmentedButton<String>(
-                      segments: [
-                        ButtonSegment<String>(
-                          value: 'en',
-                          label: Text(l10n.english),
+
+                  // Settings list
+                  SoftCard(
+                    padding: const EdgeInsets.symmetric(vertical: 6),
+                    child: Column(
+                      children: [
+                        _MoreRow(
+                          icon: Icons.palette_outlined,
+                          color: AppColors.violet,
+                          background: AppColors.violetBg,
+                          title: 'Bill design & paper',
+                          subtitle: 'Logo, paper, colours',
+                          onTap: () => context.push('/more/invoice-design'),
                         ),
-                        ButtonSegment<String>(
-                          value: 'hi',
-                          label: Text(l10n.hindi),
+                        _MoreRow(
+                          icon: Icons.cloud_sync_outlined,
+                          color: AppColors.blue,
+                          background: AppColors.blueBg,
+                          title: 'Backup & Cloud Sync',
+                          subtitle: 'Google account, devices',
+                          onTap: () => context.push('/more/backup-sync'),
                         ),
-                        ButtonSegment<String>(
-                          value: 'gu',
-                          label: Text(l10n.gujarati),
+                        _MoreRow(
+                          icon: Icons.badge_outlined,
+                          color: AppColors.lightSuccess,
+                          background: AppColors.goodBg,
+                          title: 'Staff & roles',
+                          subtitle: 'Cashier, manager',
+                          onTap: () => context.push('/more/staff'),
+                        ),
+                        _MoreRow(
+                          icon: Icons.policy_outlined,
+                          color: const Color(0xFF0F9D8A),
+                          background: const Color(0xFFDDF5F1),
+                          title: 'Privacy & legal',
+                          subtitle: 'Data aur GST records',
+                          onTap: () => context.push('/more/legal'),
                         ),
                       ],
-                      selected: {currentLocale.languageCode},
-                      onSelectionChanged: (newSelection) {
-                        if (newSelection.isNotEmpty) {
-                          ref
-                              .read(localeProvider.notifier)
-                              .setLanguageCode(newSelection.first);
-                        }
-                      },
                     ),
                   ),
+                  const SizedBox(height: 16),
+
+                  // App lock
+                  const AppLockCard(),
+                  const SizedBox(height: 16),
+
+                  // Bulk item import
+                  const ItemsImportCard(),
+                  const SizedBox(height: 16),
+
+                  // App updates (GitHub releases)
+                  const _UpdateCard(),
+                  const SizedBox(height: 16),
+
+                  // Business Settings
+                  const _BusinessSettingsSection(),
+                  const SizedBox(height: 16),
+
+                  // Local Backup & Restore
+                  const _BackupRestoreSection(),
+                  const SizedBox(height: 16),
+
+                  // Language Settings
+                  SoftCard(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            const IconTile(
+                              icon: Icons.language,
+                              color: AppColors.accent,
+                              background: AppColors.warnBg,
+                              size: 38,
+                            ),
+                            const SizedBox(width: 12),
+                            Text(
+                              l10n.language,
+                              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        SizedBox(
+                          width: double.infinity,
+                          child: SegmentedButton<String>(
+                            segments: [
+                              ButtonSegment<String>(
+                                value: 'en',
+                                label: Text(l10n.english),
+                              ),
+                              ButtonSegment<String>(
+                                value: 'hi',
+                                label: Text(l10n.hindi),
+                              ),
+                              ButtonSegment<String>(
+                                value: 'gu',
+                                label: Text(l10n.gujarati),
+                              ),
+                            ],
+                            selected: {currentLocale.languageCode},
+                            onSelectionChanged: (newSelection) {
+                              if (newSelection.isNotEmpty) {
+                                ref
+                                    .read(localeProvider.notifier)
+                                    .setLanguageCode(newSelection.first);
+                              }
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ]),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _MoreTile extends StatelessWidget {
+  final IconData icon;
+  final Color color;
+  final Color background;
+  final String label;
+  final VoidCallback onTap;
+  const _MoreTile({
+    required this.icon,
+    required this.color,
+    required this.background,
+    required this.label,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SoftCard(
+      onTap: onTap,
+      padding: const EdgeInsets.all(14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          IconTile(icon: icon, color: color, background: background, size: 40),
+          Text(label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800)),
+        ],
+      ),
+    );
+  }
+}
+
+class _MoreRow extends StatelessWidget {
+  final IconData icon;
+  final Color color;
+  final Color background;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+  const _MoreRow({
+    required this.icon,
+    required this.color,
+    required this.background,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        child: Row(
+          children: [
+            IconTile(icon: icon, color: color, background: background, size: 42),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800)),
+                  Text(subtitle,
+                      style: const TextStyle(
+                          fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.lightMuted)),
                 ],
               ),
             ),
-          ),
-        ]),
+            const Icon(Icons.chevron_right_rounded, color: AppColors.lightMuted),
+          ],
+        ),
       ),
     );
   }
@@ -332,9 +407,9 @@ class _BackupRestoreSectionState extends ConsumerState<_BackupRestoreSection> {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
+    return SoftCard(
       child: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: EdgeInsets.zero,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -480,9 +555,9 @@ class _BusinessSettingsSectionState extends ConsumerState<_BusinessSettingsSecti
           _initialized = true;
         }
 
-        return Card(
+        return SoftCard(
           child: Padding(
-            padding: const EdgeInsets.all(16.0),
+            padding: EdgeInsets.zero,
             child: Form(
               key: _formKey,
               child: Column(
@@ -641,9 +716,11 @@ class _UpdateCardState extends State<_UpdateCard> {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
+    return SoftCard(
+      padding: const EdgeInsets.symmetric(vertical: 4),
       child: ListTile(
-        leading: const Icon(Icons.system_update, color: Colors.green, size: 32),
+        leading: const IconTile(
+            icon: Icons.system_update, color: AppColors.lightSuccess, background: AppColors.goodBg),
         title: const Text('App update', style: TextStyle(fontWeight: FontWeight.bold)),
         subtitle: Text('Version $_version'),
         trailing: _checking

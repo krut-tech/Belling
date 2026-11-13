@@ -4,7 +4,9 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/money.dart';
+import '../../core/theme/app_colors.dart';
 import '../../core/tr_text.dart';
+import '../../core/widgets/belling_ui.dart';
 import '../../data/providers.dart';
 import '../../data/repositories/document_repository.dart';
 
@@ -52,144 +54,188 @@ class _AllBillsPageState extends ConsumerState<AllBillsPage> {
     final fmt = DateFormat('dd MMM yyyy, hh:mm a');
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('All bills'),
-        actions: [
-          IconButton(
-            tooltip: 'Date range',
-            icon: Icon(_range == null ? Icons.date_range_outlined : Icons.event_available),
-            onPressed: () async {
-              final picked = await showDateRangePicker(
-                context: context,
-                firstDate: DateTime(2020),
-                lastDate: DateTime(2100),
-                initialDateRange: _range,
-              );
-              if (picked != null) setState(() => _range = picked);
-            },
-          ),
-          if (_range != null)
-            IconButton(
-              tooltip: 'Clear dates',
-              icon: const Icon(Icons.close),
-              onPressed: () => setState(() => _range = null),
-            ),
-        ],
-      ),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
-            child: TextField(
-              decoration: const InputDecoration(
-                hintText: 'Bill number ya customer ka naam',
-                prefixIcon: Icon(Icons.search),
-                isDense: true,
-                border: OutlineInputBorder(),
-              ),
-              onChanged: (v) => setState(() => _q = v),
-            ),
-          ),
-          SizedBox(
-            height: 48,
-            child: ListView(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              children: [
-                for (final f in _Filter.values)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
-                    child: ChoiceChip(
-                      label: Text(switch (f) {
-                        _Filter.all => 'All',
-                        _Filter.due => 'Baaki',
-                        _Filter.paid => 'Paid',
-                        _Filter.cancelled => 'Cancelled',
-                        _Filter.returns => 'Returns',
-                      }),
-                      selected: _filter == f,
-                      onSelected: (_) => setState(() => _filter = f),
-                    ),
+      body: SafeArea(
+        bottom: false,
+        child: Column(
+          children: [
+            BellingHeader(
+              title: 'All bills',
+              subtitle: 'Saare purane bills - kabhi delete nahi hote',
+              showBack: true,
+              actions: [
+                SoftIconButton(
+                  tooltip: 'Date range',
+                  icon: _range == null ? Icons.date_range_outlined : Icons.event_available,
+                  onTap: () async {
+                    final picked = await showDateRangePicker(
+                      context: context,
+                      firstDate: DateTime(2020),
+                      lastDate: DateTime(2100),
+                      initialDateRange: _range,
+                    );
+                    if (picked != null) setState(() => _range = picked);
+                  },
+                ),
+                if (_range != null)
+                  SoftIconButton(
+                    tooltip: 'Clear dates',
+                    icon: Icons.close,
+                    onTap: () => setState(() => _range = null),
                   ),
               ],
             ),
-          ),
-          Expanded(
-            child: async.when(
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (e, s) => Center(child: Text('Error: $e')),
-              data: (o) {
-                final rows = o.rows.where(_matches).toList();
-                if (rows.isEmpty) {
-                  return const Center(child: Text('Koi bill nahi mila'));
-                }
-                return ListView.separated(
-                  itemCount: rows.length,
-                  separatorBuilder: (_, __) => const Divider(height: 1),
-                  itemBuilder: (context, i) {
-                    final r = rows[i];
-                    final cancelled = r.status == 'cancelled';
-                    final isCn = r.docType == 'credit_note';
-                    final due = r.settlement?.duePaise ?? 0;
-                    final hasName = r.displayName != null && r.displayName!.trim().isNotEmpty;
-                    final numberLabel = isCn ? 'Credit note ${r.number}' : r.number;
-                    return ListTile(
-                      leading: CircleAvatar(
-                        backgroundColor: cancelled
-                            ? Colors.red.shade100
-                            : isCn
-                                ? Colors.purple.shade50
-                                : Colors.orange.shade50,
-                        child: Icon(
-                          cancelled
-                              ? Icons.cancel
-                              : isCn
-                                  ? Icons.assignment_return
-                                  : Icons.receipt_long,
-                          color: cancelled
-                              ? Colors.red
-                              : isCn
-                                  ? Colors.purple
-                                  : Colors.orange.shade800,
+            Padding(
+              padding: const EdgeInsets.fromLTRB(18, 4, 18, 4),
+              child: TextField(
+                decoration: InputDecoration(
+                  hintText: 'Bill number ya customer ka naam',
+                  prefixIcon: const Icon(Icons.search),
+                  isDense: true,
+                  filled: true,
+                  fillColor: Colors.white,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(18),
+                    borderSide: const BorderSide(color: AppColors.lightBorder),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(18),
+                    borderSide: const BorderSide(color: AppColors.lightBorder),
+                  ),
+                ),
+                onChanged: (v) => setState(() => _q = v),
+              ),
+            ),
+            SizedBox(
+              height: 50,
+              child: ListView(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 14),
+                children: [
+                  for (final f in _Filter.values)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 7),
+                      child: ChoiceChip(
+                        showCheckmark: false,
+                        shape: const StadiumBorder(side: BorderSide(color: AppColors.lightBorder)),
+                        backgroundColor: Colors.white,
+                        selectedColor: AppColors.ink,
+                        labelStyle: TextStyle(
+                          fontWeight: FontWeight.w800,
+                          color: _filter == f ? Colors.white : AppColors.lightText,
                         ),
+                        label: Text(switch (f) {
+                          _Filter.all => 'All',
+                          _Filter.due => 'Baaki',
+                          _Filter.paid => 'Paid',
+                          _Filter.cancelled => 'Cancelled',
+                          _Filter.returns => 'Returns',
+                        }),
+                        selected: _filter == f,
+                        onSelected: (_) => setState(() => _filter = f),
                       ),
-                      title: Text(
-                        hasName ? r.displayName! : numberLabel,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          decoration: cancelled ? TextDecoration.lineThrough : null,
-                        ),
-                      ),
-                      subtitle: Text('${hasName ? numberLabel : 'Walk-in'} • ${fmt.format(r.issuedAt)}'),
-                      trailing: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Text(
-                            formatRupees(r.totalPaise),
-                            style: const TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                          if (!cancelled && !isCn)
-                            Text(
-                              due > 0 ? 'Baaki ${formatRupees(due)}' : 'Paid',
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                                color: due > 0 ? Colors.red.shade700 : Colors.green.shade700,
+                    ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: async.when(
+                loading: () => const Center(child: CircularProgressIndicator()),
+                error: (e, s) => Center(child: Text('Error: $e')),
+                data: (o) {
+                  final rows = o.rows.where(_matches).toList();
+                  if (rows.isEmpty) {
+                    return const Center(child: Text('Koi bill nahi mila'));
+                  }
+                  return ListView.separated(
+                    padding: const EdgeInsets.fromLTRB(18, 6, 18, 24),
+                    itemCount: rows.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 10),
+                    itemBuilder: (context, i) {
+                      final r = rows[i];
+                      final cancelled = r.status == 'cancelled';
+                      final isCn = r.docType == 'credit_note';
+                      final due = r.settlement?.duePaise ?? 0;
+                      final hasName = r.displayName != null && r.displayName!.trim().isNotEmpty;
+                      final numberLabel = isCn ? 'Credit note ${r.number}' : r.number;
+                      return SoftCard(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                        onTap: () => context.push('/sell/done/${r.id}'),
+                        child: Row(
+                          children: [
+                            IconTile(
+                              icon: cancelled
+                                  ? Icons.cancel_outlined
+                                  : isCn
+                                      ? Icons.assignment_return_outlined
+                                      : Icons.receipt_long_outlined,
+                              color: cancelled
+                                  ? AppColors.lightDanger
+                                  : isCn
+                                      ? AppColors.violet
+                                      : due > 0
+                                          ? AppColors.lightDanger
+                                          : AppColors.lightSuccess,
+                              background: cancelled
+                                  ? AppColors.dueBg
+                                  : isCn
+                                      ? AppColors.violetBg
+                                      : due > 0
+                                          ? AppColors.dueBg
+                                          : AppColors.goodBg,
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    hasName ? r.displayName! : numberLabel,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w800,
+                                      decoration: cancelled ? TextDecoration.lineThrough : null,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    '${hasName ? numberLabel : 'Walk-in'} • ${fmt.format(r.issuedAt)}',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                        fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.lightMuted),
+                                  ),
+                                ],
                               ),
                             ),
-                        ],
-                      ),
-                      onTap: () => context.push('/sell/done/${r.id}'),
-                    );
-                  },
-                );
-              },
+                            const SizedBox(width: 8),
+                            Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                Text(
+                                  formatRupees(r.totalPaise),
+                                  style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
+                                ),
+                                if (!cancelled && !isCn) ...[
+                                  const SizedBox(height: 4),
+                                  due > 0
+                                      ? StatusBadge.due('Baaki ${formatRupees(due)}')
+                                      : StatusBadge.good('Paid'),
+                                ],
+                              ],
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  );
+                },
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

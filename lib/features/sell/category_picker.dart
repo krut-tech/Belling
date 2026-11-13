@@ -5,6 +5,7 @@ import '../../core/categories.dart';
 import '../../core/money.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/tr_text.dart';
+import '../../core/widgets/belling_ui.dart';
 import '../../data/providers.dart';
 import '../../data/repositories/product_repository.dart';
 import 'new_bill_notifier.dart';
@@ -16,24 +17,6 @@ final itemCategoriesProvider = FutureProvider.autoDispose<Map<String, String>>((
 });
 
 const _kOther = 'Other';
-
-const _tileColors = <Color>[
-  Color(0xFFE8590C),
-  Color(0xFF2563EB),
-  Color(0xFF0F766E),
-  Color(0xFF7C3AED),
-  Color(0xFFDB2777),
-  Color(0xFFB45309),
-  Color(0xFF475569),
-];
-
-Color _colorFor(String name) {
-  var h = 0;
-  for (final c in name.codeUnits) {
-    h = (h * 31 + c) & 0x7fffffff;
-  }
-  return _tileColors[h % _tileColors.length];
-}
 
 String _mono(String name) {
   final t = name.trim();
@@ -140,7 +123,6 @@ class _CategoryPickerState extends ConsumerState<CategoryPicker> {
                 children: [
                   _RailTile(
                     label: 'All',
-                    count: products.length,
                     mono: 'All',
                     color: AppColors.lightMuted,
                     selected: cat == null,
@@ -152,9 +134,8 @@ class _CategoryPickerState extends ConsumerState<CategoryPicker> {
                   for (final n in names)
                     _RailTile(
                       label: n,
-                      count: counts[n]!,
                       mono: _mono(n),
-                      color: n == _kOther ? AppColors.lightMuted : _colorFor(n),
+                      color: n == _kOther ? AppColors.lightMuted : tileColorFor(n),
                       selected: cat == n,
                       onTap: () => setState(() {
                         _cat = n;
@@ -171,26 +152,26 @@ class _CategoryPickerState extends ConsumerState<CategoryPicker> {
                 children: [
                   if (subList.isNotEmpty)
                     SizedBox(
-                      height: 44,
+                      height: 46,
                       child: ListView(
                         scrollDirection: Axis.horizontal,
                         padding: const EdgeInsets.fromLTRB(4, 4, 8, 4),
                         children: [
                           Padding(
                             padding: const EdgeInsets.only(right: 6),
-                            child: ChoiceChip(
-                              label: Text('Sab $cat'),
+                            child: _SubChip(
+                              label: 'Sab $cat',
                               selected: sub == null,
-                              onSelected: (_) => setState(() => _sub = null),
+                              onTap: () => setState(() => _sub = null),
                             ),
                           ),
                           for (final s in subList)
                             Padding(
                               padding: const EdgeInsets.only(right: 6),
-                              child: ChoiceChip(
-                                label: Text(s),
+                              child: _SubChip(
+                                label: s,
                                 selected: sub == s,
-                                onSelected: (_) => setState(() => _sub = s),
+                                onTap: () => setState(() => _sub = s),
                               ),
                             ),
                         ],
@@ -228,10 +209,42 @@ class _CategoryPickerState extends ConsumerState<CategoryPicker> {
   }
 }
 
+class _SubChip extends StatelessWidget {
+  const _SubChip({required this.label, required this.selected, required this.onTap});
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Material(
+        color: selected ? AppColors.ink : Colors.white,
+        shape: StadiumBorder(side: BorderSide(color: selected ? AppColors.ink : AppColors.lightBorder)),
+        child: InkWell(
+          customBorder: const StadiumBorder(),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 12.5,
+                fontWeight: FontWeight.w800,
+                color: selected ? Colors.white : AppColors.ink,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _RailTile extends StatelessWidget {
   const _RailTile({
     required this.label,
-    required this.count,
     required this.mono,
     required this.color,
     required this.selected,
@@ -240,7 +253,6 @@ class _RailTile extends StatelessWidget {
   });
 
   final String label;
-  final int count;
   final String mono;
   final Color color;
   final bool selected;
@@ -250,45 +262,35 @@ class _RailTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 6),
+      padding: const EdgeInsets.only(bottom: 8),
       child: Material(
         color: selected ? AppColors.ink : Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
         child: InkWell(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(20),
           onTap: onTap,
           onLongPress: onLongPress,
           child: Container(
             padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(20),
               border: Border.all(color: selected ? AppColors.ink : AppColors.lightBorder),
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Container(
-                  width: 38,
-                  height: 38,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(12)),
-                  child: Text(mono, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 14)),
-                ),
-                const SizedBox(height: 4),
+                MonoTile(mono, color: color, size: 38),
+                const SizedBox(height: 5),
                 Text(
                   label,
-                  maxLines: 2,
+                  maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w800,
                     color: selected ? Colors.white : AppColors.ink,
                   ),
-                ),
-                Text(
-                  '$count',
-                  style: TextStyle(fontSize: 11, color: selected ? Colors.white70 : AppColors.lightMuted),
                 ),
               ],
             ),
@@ -312,15 +314,15 @@ class _ItemCard extends StatelessWidget {
     final low = item.product.trackStock && item.stockMilli <= item.product.reorderLevel;
     return Material(
       color: Colors.white,
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(18),
       child: InkWell(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(18),
         onTap: onTap,
         child: Container(
-          padding: const EdgeInsets.all(10),
+          padding: const EdgeInsets.fromLTRB(12, 10, 10, 10),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: inCart ? AppColors.saffron : AppColors.lightBorder, width: inCart ? 1.6 : 1),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: inCart ? AppColors.accent : AppColors.lightBorder, width: inCart ? 1.6 : 1),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -329,14 +331,18 @@ class _ItemCard extends StatelessWidget {
                 item.product.name,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, height: 1.2),
+                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, height: 1.2),
               ),
               if (item.product.trackStock)
                 Padding(
                   padding: const EdgeInsets.only(top: 2),
                   child: Text(
                     'Stock ${formatMilliUnits(item.stockMilli)}',
-                    style: TextStyle(fontSize: 11, color: low ? AppColors.lightWarning : AppColors.lightMuted),
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: low ? AppColors.lightWarning : AppColors.lightMuted,
+                    ),
                   ),
                 ),
               const Spacer(),
@@ -345,24 +351,24 @@ class _ItemCard extends StatelessWidget {
                   Expanded(
                     child: Text(
                       formatRupees(item.product.pricePaise),
-                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800),
+                      style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
                     ),
                   ),
                   Container(
-                    constraints: const BoxConstraints(minWidth: 36),
+                    constraints: const BoxConstraints(minWidth: 38),
                     height: 36,
                     padding: const EdgeInsets.symmetric(horizontal: 8),
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
-                      color: inCart ? AppColors.saffron : AppColors.softSaffron,
+                      color: inCart ? AppColors.accent : AppColors.accentBg,
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
                       inCart ? '× ${formatMilliUnits(qtyMilli)}' : '+',
                       style: TextStyle(
                         fontWeight: FontWeight.w800,
-                        fontSize: 14,
-                        color: inCart ? Colors.white : const Color(0xFF9A3412),
+                        fontSize: inCart ? 14 : 18,
+                        color: inCart ? Colors.white : AppColors.accent,
                       ),
                     ),
                   ),

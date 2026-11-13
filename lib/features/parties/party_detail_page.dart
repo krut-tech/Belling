@@ -5,6 +5,8 @@ import 'package:intl/intl.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../core/money.dart';
+import '../../core/theme/app_colors.dart';
+import '../../core/widgets/belling_ui.dart';
 import '../../data/database.dart';
 import '../../data/providers.dart';
 import '../../data/repositories/document_repository.dart';
@@ -74,167 +76,133 @@ class PartyDetailPage extends ConsumerWidget {
         final business = businessAsync.asData?.value;
 
         return Scaffold(
-          appBar: AppBar(
-            title: Text(party.name),
-            actions: [
-              IconButton(
-                constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
-                icon: const Icon(Icons.edit),
-                tooltip: l10n.editParty,
-                onPressed: () => PartyFormDialog.show(context, party: party),
-              ),
-            ],
-          ),
-          body: Column(
-            children: [
-              // Header Card
-              Card(
-                margin: const EdgeInsets.all(16.0),
-                elevation: 2,
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          body: SafeArea(
+            child: Column(
+              children: [
+                BellingHeader(
+                  title: party.name,
+                  subtitle: party.phone,
+                  showBack: true,
+                  actions: [
+                    SoftIconButton(
+                      icon: Icons.edit_outlined,
+                      tooltip: l10n.editParty,
+                      onTap: () => PartyFormDialog.show(context, party: party),
+                    ),
+                  ],
+                ),
+                Expanded(
+                  child: ledgerAsync.when(
+                    data: (items) {
+                      return ListView(
+                        padding: const EdgeInsets.fromLTRB(18, 8, 18, 24),
                         children: [
-                          Expanded(
+                          // Hero balance card
+                          HeroCard(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  party.name,
-                                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                        fontWeight: FontWeight.bold,
-                                      ),
+                                  l10n.balance,
+                                  style: const TextStyle(
+                                    color: Color(0xB3FFFFFF),
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w700,
+                                  ),
                                 ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  '${l10n.phone}: ${party.phone}',
-                                  style: Theme.of(context).textTheme.bodyMedium,
-                                ),
+                                const SizedBox(height: 6),
+                                _buildBalanceBadge(context, l10n, balancePaise),
                                 if (party.gstin != null && party.gstin!.isNotEmpty) ...[
-                                  const SizedBox(height: 2),
+                                  const SizedBox(height: 6),
                                   Text(
                                     '${l10n.gstin}: ${party.gstin}',
-                                    style: Theme.of(context).textTheme.bodySmall,
+                                    style: const TextStyle(color: Color(0xB3FFFFFF), fontSize: 12),
                                   ),
                                 ],
                                 if (party.creditLimitPaise > 0) ...[
                                   const SizedBox(height: 2),
                                   Text(
                                     '${l10n.creditLimit}: ${formatRupees(party.creditLimitPaise)}',
-                                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                          color: Colors.grey.shade700,
-                                        ),
+                                    style: const TextStyle(color: Color(0xB3FFFFFF), fontSize: 12),
                                   ),
                                 ],
+                                const SizedBox(height: 16),
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: _heroButton(
+                                        label: l10n.receivePayment,
+                                        icon: Icons.add_card,
+                                        gradient: true,
+                                        onTap: () async {
+                                          await ReceivePaymentDialog.show(context, party: party);
+                                        },
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: _heroButton(
+                                        label: l10n.sendReminder,
+                                        icon: Icons.share,
+                                        gradient: false,
+                                        onTap: () {
+                                          if (balancePaise > 0) {
+                                            showDuesReminderSheet(context, partyId: party.id);
+                                          } else {
+                                            _sendReminder(
+                                              context: context,
+                                              party: party,
+                                              balancePaise: balancePaise,
+                                              business: business,
+                                            );
+                                          }
+                                        },
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ],
                             ),
                           ),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: [
-                              Text(
-                                l10n.balance,
-                                style: Theme.of(context).textTheme.bodySmall,
-                              ),
-                              const SizedBox(height: 4),
-                              _buildBalanceBadge(context, l10n, balancePaise),
-                            ],
+                          const SizedBox(height: 18),
+                          Text(
+                            l10n.ledger,
+                            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
                           ),
+                          const SizedBox(height: 10),
+                          if (items.isEmpty)
+                            Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 24),
+                              child: Center(
+                                child: Text(
+                                  l10n.noTransactions,
+                                  style: TextStyle(color: Colors.grey.shade600),
+                                ),
+                              ),
+                            )
+                          else
+                            for (var index = 0; index < items.length; index++)
+                              FadeSlideIn(
+                                index: index,
+                                child: Padding(
+                                  padding: const EdgeInsets.only(bottom: 10),
+                                  child: _buildLedgerTile(
+                                    context,
+                                    l10n,
+                                    items[index],
+                                    billById[items[index].documentId],
+                                  ),
+                                ),
+                              ),
                         ],
-                      ),
-                      const Divider(height: 24),
-                      // Action buttons
-                      Row(
-                        children: [
-                          Expanded(
-                            child: ElevatedButton.icon(
-                              style: ElevatedButton.styleFrom(
-                                minimumSize: const Size(48, 48),
-                                backgroundColor: Theme.of(context).colorScheme.primary,
-                                foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                              ),
-                              onPressed: () async {
-                                await ReceivePaymentDialog.show(context, party: party);
-                              },
-                              icon: const Icon(Icons.add_card),
-                              label: Text(l10n.receivePayment),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: OutlinedButton.icon(
-                              style: OutlinedButton.styleFrom(
-                                minimumSize: const Size(48, 48),
-                              ),
-                              onPressed: () {
-                                if (balancePaise > 0) {
-                                  showDuesReminderSheet(context, partyId: party.id);
-                                } else {
-                                  _sendReminder(
-                                    context: context,
-                                    party: party,
-                                    balancePaise: balancePaise,
-                                    business: business,
-                                  );
-                                }
-                              },
-                              icon: const Icon(Icons.share),
-                              label: Text(l10n.sendReminder),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-
-              // Ledger Section Header
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    l10n.ledger,
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                  ),
-                ),
-              ),
-
-              // Ledger List
-              Expanded(
-                child: ledgerAsync.when(
-                  data: (items) {
-                    if (items.isEmpty) {
-                      return Center(
-                        child: Text(
-                          l10n.noTransactions,
-                          style: TextStyle(color: Colors.grey.shade600),
-                        ),
                       );
-                    }
-
-                    return ListView.separated(
-                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                      itemCount: items.length,
-                      separatorBuilder: (context, index) => const Divider(height: 1),
-                      itemBuilder: (context, index) {
-                        final item = items[index];
-                        return FadeSlideIn(index: index, child: _buildLedgerTile(context, l10n, item, billById[item.documentId]));
-                      },
-                    );
-                  },
-                  loading: () => const Center(child: CircularProgressIndicator()),
-                  error: (e, s) => Center(child: Text('Error: $e')),
+                    },
+                    loading: () => const Center(child: CircularProgressIndicator()),
+                    error: (e, s) => Center(child: Text('Error: $e')),
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         );
       },
@@ -249,116 +217,168 @@ class PartyDetailPage extends ConsumerWidget {
     );
   }
 
+  Widget _heroButton({
+    required String label,
+    required IconData icon,
+    required bool gradient,
+    required VoidCallback onTap,
+  }) {
+    final fg = gradient ? Colors.white : AppColors.lightText;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: onTap,
+        child: Ink(
+          height: 48,
+          decoration: BoxDecoration(
+            gradient: gradient ? AppColors.accentGradient : null,
+            color: gradient ? null : Colors.white,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, size: 18, color: fg),
+              const SizedBox(width: 6),
+              Flexible(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(color: fg, fontSize: 14, fontWeight: FontWeight.w800),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildBalanceBadge(BuildContext context, AppLocalizations l10n, int balancePaise) {
+    const style = TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.w800, letterSpacing: -0.5);
     if (balancePaise > 0) {
-      return Text(
-        l10n.youGet(formatRupees(balancePaise)),
-        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              color: Colors.red.shade700,
-              fontWeight: FontWeight.bold,
-            ),
-      );
+      return Text(l10n.youGet(formatRupees(balancePaise)), style: style);
     } else if (balancePaise < 0) {
-      return Text(
-        l10n.youGive(formatRupees(balancePaise.abs())),
-        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              color: Colors.green.shade700,
-              fontWeight: FontWeight.bold,
-            ),
-      );
+      return Text(l10n.youGive(formatRupees(balancePaise.abs())), style: style);
     } else {
-      return Text(
-        l10n.settled,
-        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              color: Colors.grey.shade700,
-              fontWeight: FontWeight.bold,
-            ),
-      );
+      return Text(l10n.settled, style: style);
     }
   }
 
   Widget _buildLedgerTile(BuildContext context, AppLocalizations l10n, LedgerItem item, BillRow? bill) {
     IconData icon;
     Color iconColor;
+    Color iconBg;
     String sign;
     Color amountColor;
 
     switch (item.type) {
       case LedgerItemType.invoice:
         icon = Icons.receipt_long;
-        iconColor = Colors.orange.shade700;
+        iconColor = AppColors.accent;
+        iconBg = AppColors.accentBg;
         sign = '+';
-        amountColor = Colors.red.shade700;
+        amountColor = AppColors.lightDanger;
         break;
       case LedgerItemType.creditNote:
         icon = Icons.assignment_return;
-        iconColor = Colors.purple.shade700;
+        iconColor = AppColors.violet;
+        iconBg = AppColors.violetBg;
         sign = '-';
-        amountColor = Colors.green.shade700;
+        amountColor = AppColors.lightSuccess;
         break;
       case LedgerItemType.payment:
         icon = Icons.payments;
-        iconColor = Colors.green.shade700;
+        iconColor = AppColors.lightSuccess;
+        iconBg = AppColors.goodBg;
         sign = '-';
-        amountColor = Colors.green.shade700;
+        amountColor = AppColors.lightSuccess;
         break;
     }
 
     final dateStr = DateFormat('dd MMM yyyy, hh:mm a').format(item.date);
+    final settlement = item.type == LedgerItemType.invoice ? bill?.settlement : null;
 
-    return ListTile(
-      contentPadding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 8.0),
-      leading: CircleAvatar(
-        backgroundColor: iconColor.withAlpha(30),
-        child: Icon(icon, color: iconColor),
-      ),
-      title: Text(
-        item.title,
-        style: const TextStyle(fontWeight: FontWeight.bold),
-      ),
-      subtitle: Column(
+    Widget? statusBadge;
+    double? progress;
+    if (settlement != null && bill != null) {
+      if (bill.status == 'cancelled') {
+        statusBadge = StatusBadge.warn('Cancelled');
+        progress = 0;
+      } else if (settlement.duePaise > 0) {
+        statusBadge = StatusBadge.due('Paid ${formatRupees(settlement.paidPaise)} · Baaki ${formatRupees(settlement.duePaise)}');
+        progress = settlement.netPaise > 0 ? (settlement.paidPaise / settlement.netPaise).clamp(0.0, 1.0) : 0;
+      } else {
+        statusBadge = StatusBadge.good('Paid in full');
+        progress = 1;
+      }
+    }
+
+    return SoftCard(
+      padding: const EdgeInsets.all(14),
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(dateStr, style: const TextStyle(fontSize: 12)),
-          if (item.type == LedgerItemType.invoice && bill?.settlement != null)
-            Text(
-              bill!.status == 'cancelled'
-                  ? 'Cancelled'
-                  : (bill.settlement!.duePaise > 0
-                      ? 'Paid ${formatRupees(bill.settlement!.paidPaise)} · Baaki ${formatRupees(bill.settlement!.duePaise)}'
-                      : 'Paid in full'),
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-                color: (bill.settlement!.duePaise > 0 && bill.status != 'cancelled')
-                    ? Colors.red.shade700
-                    : Colors.green.shade700,
+          Row(
+            children: [
+              IconTile(icon: icon, color: iconColor, background: iconBg, size: 40),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      item.title,
+                      style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      dateStr,
+                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.lightMuted),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    '$sign ${formatRupees(item.amountPaise)}',
+                    style: TextStyle(fontWeight: FontWeight.w800, color: amountColor, fontSize: 15),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    l10n.runningBalance(formatRupees(item.runningBalancePaise)),
+                    style: const TextStyle(fontSize: 11, color: AppColors.lightMuted),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          if (statusBadge != null && progress != null) ...[
+            const SizedBox(height: 10),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(999),
+              child: LinearProgressIndicator(
+                value: progress,
+                minHeight: 6,
+                backgroundColor: AppColors.lightBorder,
+                valueColor: const AlwaysStoppedAnimation<Color>(AppColors.lightSuccess),
               ),
             ),
-          if (item.note != null && item.note!.isNotEmpty)
+            const SizedBox(height: 8),
+            Align(alignment: Alignment.centerRight, child: statusBadge),
+          ],
+          if (item.note != null && item.note!.isNotEmpty) ...[
+            const SizedBox(height: 8),
             Text(
               '${l10n.note}: ${item.note}',
-              style: TextStyle(fontSize: 12, fontStyle: FontStyle.italic, color: Colors.grey.shade700),
+              style: const TextStyle(fontSize: 12, fontStyle: FontStyle.italic, color: AppColors.lightMuted),
             ),
-        ],
-      ),
-      trailing: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          Text(
-            '$sign ${formatRupees(item.amountPaise)}',
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              color: amountColor,
-              fontSize: 15,
-            ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            l10n.runningBalance(formatRupees(item.runningBalancePaise)),
-            style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
-          ),
+          ],
         ],
       ),
     );

@@ -8,7 +8,9 @@ import 'package:intl/intl.dart';
 
 import '../../core/money.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/widgets/belling_ui.dart';
 import '../../data/providers.dart';
+import '../../data/repositories/document_repository.dart';
 import '../../l10n/app_localizations.dart';
 import '../../sync/sync_chip.dart';
 import '../../core/tr_text.dart';
@@ -50,230 +52,261 @@ class SellPage extends ConsumerWidget {
     }
 
     return Scaffold(
-      body: Column(
-        children: [
-          // Haldi header: saffron-to-crimson gradient with today's sales card.
-          Container(
-            width: double.infinity,
-            padding: EdgeInsets.fromLTRB(20, MediaQuery.of(context).padding.top + 14, 20, 22),
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [AppColors.saffron, AppColors.crimson, AppColors.wine],
-                stops: [0, 0.7, 1],
-              ),
-              borderRadius: BorderRadius.vertical(bottom: Radius.circular(32)),
+      floatingActionButton: FloatingActionButton.extended(
+        backgroundColor: AppColors.accent,
+        foregroundColor: Colors.white,
+        onPressed: () => context.go('/sell/new'),
+        icon: const Icon(Icons.add),
+        label: Text(l10n.newBill, style: const TextStyle(fontWeight: FontWeight.w800)),
+      ),
+      body: SafeArea(
+        child: Column(
+          children: [
+            BellingHeader(
+              title: (businessName == null || businessName.isEmpty) ? l10n.tabSell : businessName,
+              actions: const [SyncChip()],
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        (businessName == null || businessName.isEmpty) ? l10n.tabSell : businessName,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w800),
-                      ),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(18),
-                      ),
-                      child: const SyncChip(),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(18),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(24),
-                    boxShadow: const [BoxShadow(color: Color(0x38000000), blurRadius: 24, offset: Offset(0, 12))],
-                  ),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              l10n.todayBills,
-                              style: const TextStyle(fontSize: 13, color: AppColors.lightMuted, fontWeight: FontWeight.w600),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              formatRupees(salesPaise),
-                              style: const TextStyle(
-                                fontSize: 34,
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: -0.5,
-                                color: AppColors.ink,
-                                fontFeatures: [FontFeature.tabularFigures()],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFDCFCE7),
-                          borderRadius: BorderRadius.circular(999),
-                        ),
-                        child: Text(
-                          '$billCount',
-                          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: Color(0xFF166534)),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
-            child: SizedBox(
-              width: double.infinity,
-              height: 56,
-              child: ElevatedButton.icon(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.ink,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(18),
-                  ),
-                ),
-                onPressed: () {
-                  context.go('/sell/new');
-                },
-                icon: const Icon(Icons.add_shopping_cart, size: 26),
-                label: Text(
-                  l10n.newBill,
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
-                ),
-              ),
-            ),
-          ),
-
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  l10n.todayBills,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                ),
-              ],
-            ),
-          ),
-
-          Expanded(
-            child: todayDocsAsync.when(
-              data: (docs) {
-                if (docs.isEmpty) {
-                  return Center(
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 96),
+                children: [
+                  HeroCard(
                     child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Icon(Icons.receipt_long_outlined, size: 64, color: Colors.grey.shade400),
-                        const SizedBox(height: 16),
                         Text(
-                          l10n.noBillsToday,
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Colors.grey),
+                          l10n.todayBills,
+                          style: const TextStyle(color: Color(0xB3FFFFFF), fontSize: 13, fontWeight: FontWeight.w600),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          formatRupees(salesPaise),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 38,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: -0.8,
+                            fontFeatures: [FontFeature.tabularFigures()],
+                          ),
+                        ),
+                        const SizedBox(height: 14),
+                        const Divider(height: 1, color: Color(0x26FFFFFF)),
+                        const SizedBox(height: 12),
+                        const Text('Bills', style: TextStyle(color: Color(0xB3FFFFFF), fontSize: 12, fontWeight: FontWeight.w600)),
+                        const SizedBox(height: 2),
+                        Text(
+                          '$billCount',
+                          style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w800),
                         ),
                       ],
                     ),
-                  );
-                }
-
-                return ListView.separated(
-                  padding: const EdgeInsets.symmetric(vertical: 8),
-                  itemCount: docs.length,
-                  separatorBuilder: (ctx, idx) => const Divider(height: 1),
-                  itemBuilder: (ctx, index) {
-                    final item = docs[index];
-                    final doc = item.document;
-                    final party = item.party;
-                    final timeStr = DateFormat('hh:mm a').format(doc.issuedAt);
-                    final isCancelled = doc.status == 'cancelled';
-                    final nameOrNull = party?.name ?? _customerName(doc.snapshotJson);
-
-                    return FadeSlideIn(index: index, child: ListTile(
-                      minVerticalPadding: 12,
-                      leading: CircleAvatar(
-                        backgroundColor: isCancelled ? Colors.red.shade100 : AppColors.softSaffron,
-                        child: Icon(
-                          isCancelled ? Icons.cancel : Icons.receipt,
-                          color: isCancelled ? Colors.red : AppColors.lightPrimary,
-                        ),
+                  ),
+                  const SizedBox(height: 18),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _QuickAction(
+                        icon: Icons.receipt_long_outlined,
+                        color: AppColors.accent,
+                        background: AppColors.accentBg,
+                        label: l10n.newBill,
+                        onTap: () => context.go('/sell/new'),
                       ),
-                      title: Row(
-                        children: [
-                          Flexible(
-                            child: Text(
-                              nameOrNull ?? doc.number,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                decoration: isCancelled ? TextDecoration.lineThrough : null,
-                              ),
-                            ),
+                      _QuickAction(
+                        icon: Icons.local_shipping_outlined,
+                        color: AppColors.violet,
+                        background: AppColors.violetBg,
+                        label: 'Purchase',
+                        onTap: () => context.push('/more/purchase/new'),
+                      ),
+                      _QuickAction(
+                        icon: Icons.description_outlined,
+                        color: AppColors.warn,
+                        background: AppColors.warnBg,
+                        label: 'Estimate',
+                        onTap: () => context.push('/more/estimates'),
+                      ),
+                      _QuickAction(
+                        icon: Icons.account_balance_wallet_outlined,
+                        color: AppColors.lightSuccess,
+                        background: AppColors.goodBg,
+                        label: 'Expenses',
+                        onTap: () => context.push('/more/expenses'),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 18),
+                  SoftCard(
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          l10n.todayBills,
+                          style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
+                        ),
+                        const SizedBox(height: 8),
+                        todayDocsAsync.when(
+                          data: (docs) {
+                            if (docs.isEmpty) {
+                              return Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 28),
+                                child: Center(
+                                  child: Column(
+                                    children: [
+                                      Icon(Icons.receipt_long_outlined, size: 56, color: Colors.grey.shade400),
+                                      const SizedBox(height: 12),
+                                      Text(
+                                        l10n.noBillsToday,
+                                        style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Colors.grey),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            }
+                            return Column(
+                              children: [
+                                for (var index = 0; index < docs.length; index++)
+                                  _billRow(context, l10n, docs[index], index, tabularStyle),
+                              ],
+                            );
+                          },
+                          loading: () => const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 28),
+                            child: Center(child: CircularProgressIndicator()),
                           ),
-                          if (isCancelled) ...[
-                            const SizedBox(width: 8),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: Colors.red.shade100,
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: Text(
-                                l10n.statusCancelled,
-                                style: TextStyle(fontSize: 10, color: Colors.red.shade900),
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
-                      subtitle: Text(
-                        '${nameOrNull != null ? doc.number : l10n.walkIn} • $timeStr',
-                        style: TextStyle(
-                          color: Colors.grey.shade700,
+                          error: (e, st) => Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 28),
+                            child: Center(child: Text('Error: $e')),
+                          ),
                         ),
-                      ),
-                      trailing: Text(
-                        formatRupees(doc.totalPaise),
-                        style: Theme.of(context).textTheme.titleMedium?.merge(tabularStyle).copyWith(
-                              fontWeight: FontWeight.bold,
-                              decoration: isCancelled ? TextDecoration.lineThrough : null,
-                              color: isCancelled ? Colors.grey : null,
-                            ),
-                      ),
-                      onTap: () {
-                        context.go('/sell/done/${doc.id}');
-                      },
-                    ));
-                  },
-                );
-              },
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (e, st) => Center(child: Text('Error: $e')),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _billRow(
+    BuildContext context,
+    AppLocalizations l10n,
+    DocumentWithParty item,
+    int index,
+    TextStyle tabularStyle,
+  ) {
+    final doc = item.document;
+    final party = item.party;
+    final timeStr = DateFormat('hh:mm a').format(doc.issuedAt);
+    final isCancelled = doc.status == 'cancelled';
+    final nameOrNull = party?.name ?? _customerName(doc.snapshotJson);
+    final displayName = nameOrNull ?? doc.number;
+
+    return FadeSlideIn(
+      index: index,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(14),
+        onTap: () => context.go('/sell/done/${doc.id}'),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          child: Row(
+            children: [
+              MonoTile(
+                initialsOf(displayName),
+                color: isCancelled ? AppColors.lightDanger : tileColorFor(displayName),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      displayName,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w800,
+                        decoration: isCancelled ? TextDecoration.lineThrough : null,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '${nameOrNull != null ? doc.number : l10n.walkIn} • $timeStr',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.lightMuted),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    formatRupees(doc.totalPaise),
+                    style: tabularStyle.copyWith(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w800,
+                      decoration: isCancelled ? TextDecoration.lineThrough : null,
+                      color: isCancelled ? Colors.grey : AppColors.lightText,
+                    ),
+                  ),
+                  if (isCancelled) ...[
+                    const SizedBox(height: 4),
+                    StatusBadge.due(l10n.statusCancelled),
+                  ],
+                ],
+              ),
+            ],
           ),
-        ],
+        ),
+      ),
+    );
+  }
+}
+
+class _QuickAction extends StatelessWidget {
+  final IconData icon;
+  final Color color;
+  final Color background;
+  final String label;
+  final VoidCallback onTap;
+  const _QuickAction({
+    required this.icon,
+    required this.color,
+    required this.background,
+    required this.label,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(16),
+      onTap: onTap,
+      child: SizedBox(
+        width: 72,
+        child: Column(
+          children: [
+            IconTile(icon: icon, color: color, background: background, size: 56),
+            const SizedBox(height: 6),
+            Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+            ),
+          ],
+        ),
       ),
     );
   }

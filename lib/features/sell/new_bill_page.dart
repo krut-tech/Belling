@@ -1,6 +1,8 @@
 import 'package:qr_flutter/qr_flutter.dart';
 import '../../core/invoice_pdf.dart' show buildUpiQrUri;
 import 'package:flutter/material.dart' hide Text;
+import '../../core/theme/app_colors.dart';
+import '../../core/widgets/belling_ui.dart';
 import '../../core/widgets/motion.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -278,6 +280,7 @@ class _NewBillPageState extends ConsumerState<NewBillPage> {
             ),
           if (billState.lines.isNotEmpty && !showPicker)
             TextButton.icon(
+              style: TextButton.styleFrom(foregroundColor: AppColors.accent, textStyle: const TextStyle(fontWeight: FontWeight.w800)),
               onPressed: () => setState(() => _showBill = false),
               icon: const Icon(Icons.add),
               label: const Text('Add items'),
@@ -297,7 +300,7 @@ class _NewBillPageState extends ConsumerState<NewBillPage> {
         children: [
           // Search & Scan Box
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
             child: Row(
               children: [
                 Expanded(
@@ -306,8 +309,13 @@ class _NewBillPageState extends ConsumerState<NewBillPage> {
                     focusNode: _searchFocusNode,
                     decoration: InputDecoration(
                       hintText: l10n.searchOrScan,
-                      prefixIcon: Icon(Icons.search),
-                      border: OutlineInputBorder(),
+                      prefixIcon: const Icon(Icons.search),
+                      isDense: true,
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(18),
+                        borderSide: const BorderSide(color: AppColors.lightBorder),
+                      ),
                       suffixIcon: _searchQuery.isNotEmpty
                           ? IconButton(
                               tooltip: tr(context, 'Clear'),
@@ -329,14 +337,22 @@ class _NewBillPageState extends ConsumerState<NewBillPage> {
                     onSubmitted: (v) => _handleBarcodeScanOrSubmit(v),
                   ),
                 ),
-                const SizedBox(width: 8),
-                OutlinedButton.icon(
-                  style: OutlinedButton.styleFrom(
-                    minimumSize: const Size(88, 56), // Touch target 48px+
+                const SizedBox(width: 10),
+                Tooltip(
+                  message: l10n.scanBarcode,
+                  child: Material(
+                    color: AppColors.ink,
+                    borderRadius: BorderRadius.circular(16),
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(16),
+                      onTap: _scanBarcode,
+                      child: const SizedBox(
+                        width: 48,
+                        height: 48,
+                        child: Icon(Icons.qr_code_scanner, color: Colors.white),
+                      ),
+                    ),
                   ),
-                  onPressed: _scanBarcode,
-                  icon: const Icon(Icons.qr_code_scanner),
-                  label: Text(l10n.scanBarcode),
                 ),
               ],
             ),
@@ -358,42 +374,59 @@ class _NewBillPageState extends ConsumerState<NewBillPage> {
             )
           else ...[
             // Party Selector Bar
-            InkWell(
-              onTap: _showSelectPartyDialog,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                color: Theme.of(context).colorScheme.surfaceContainerHighest.withAlpha(80),
-                child: Row(
-                  children: [
-                    const Icon(Icons.person, color: Colors.blue),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            billState.party != null
-                                ? billState.party!.name
-                                : l10n.walkIn,
-                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                ),
-                          ),
-                          Text(
-                            billState.isInterState
-                                ? 'Dusre state ka grahak · IGST lagega'
-                                : (billState.party == null
-                                    ? 'Bina party (cash) · CGST + SGST'
-                                    : 'Same state · CGST + SGST'),
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                  color: billState.isInterState ? Colors.orange.shade800 : Colors.grey.shade700,
-                                ),
-                          ),
-                        ],
-                      ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+              child: Material(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(16),
+                  onTap: _showSelectPartyDialog,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: AppColors.lightBorder),
                     ),
-                    const Icon(Icons.chevron_right),
-                  ],
+                    child: Row(
+                      children: [
+                        billState.party != null
+                            ? MonoTile(initialsOf(billState.party!.name), color: tileColorFor(billState.party!.name), size: 36)
+                            : const IconTile(icon: Icons.person_outline, color: AppColors.blue, background: AppColors.blueBg, size: 36),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                billState.party != null
+                                    ? billState.party!.name
+                                    : l10n.walkIn,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800),
+                              ),
+                              Text(
+                                billState.isInterState
+                                    ? 'Dusre state ka grahak · IGST lagega'
+                                    : (billState.party == null
+                                        ? 'Bina party (cash) · CGST + SGST'
+                                        : 'Same state · CGST + SGST'),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: 11.5,
+                                  fontWeight: FontWeight.w600,
+                                  color: billState.isInterState ? AppColors.lightWarning : AppColors.lightMuted,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const Icon(Icons.chevron_right, color: AppColors.lightMuted),
+                      ],
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -403,11 +436,12 @@ class _NewBillPageState extends ConsumerState<NewBillPage> {
             if (billState.error != null)
               Container(
                 width: double.infinity,
+                margin: const EdgeInsets.fromLTRB(16, 0, 16, 8),
                 padding: const EdgeInsets.all(8),
-                color: Colors.red.shade100,
+                decoration: BoxDecoration(color: AppColors.dueBg, borderRadius: BorderRadius.circular(14)),
                 child: Text(
                   billState.error!,
-                  style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+                  style: const TextStyle(color: AppColors.lightDanger, fontWeight: FontWeight.w800),
                   textAlign: TextAlign.center,
                 ),
               ),
@@ -419,9 +453,9 @@ class _NewBillPageState extends ConsumerState<NewBillPage> {
                       onAdd: (product) => ref.read(newBillProvider.notifier).addProduct(product),
                     )
                   : ListView.separated(
-                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
                       itemCount: billState.lines.length,
-                      separatorBuilder: (ctx, idx) => const Divider(height: 1),
+                      separatorBuilder: (ctx, idx) => const SizedBox(height: 8),
                       itemBuilder: (ctx, index) {
                         final line = billState.lines[index];
                         final lineTotal = divideRoundHalfUp(line.qtyMilli * line.ratePaise, 1000) - line.discountPaise;
@@ -430,7 +464,7 @@ class _NewBillPageState extends ConsumerState<NewBillPage> {
                           key: ValueKey('${line.product.product.id}_$index'),
                           direction: DismissDirection.endToStart,
                           background: Container(
-                            color: Colors.red,
+                            decoration: BoxDecoration(color: AppColors.lightDanger, borderRadius: BorderRadius.circular(18)),
                             alignment: Alignment.centerRight,
                             padding: const EdgeInsets.only(right: 20),
                             child: const Icon(Icons.delete, color: Colors.white),
@@ -438,99 +472,103 @@ class _NewBillPageState extends ConsumerState<NewBillPage> {
                           onDismissed: (_) {
                             ref.read(newBillProvider.notifier).removeLine(index);
                           },
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
+                          child: SoftCard(
+                            padding: const EdgeInsets.fromLTRB(14, 8, 8, 8),
+                            child: Row(
                               children: [
-                                // Row 1: full-width name + line total
-                                Row(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Expanded(
-                                      child: Text(
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
                                         line.product.product.name,
                                         maxLines: 2,
                                         overflow: TextOverflow.ellipsis,
-                                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                              fontWeight: FontWeight.w600,
-                                            ),
+                                        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800, height: 1.2),
                                       ),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Text(
-                                      formatRupees(lineTotal),
-                                      textAlign: TextAlign.right,
-                                      style: Theme.of(context).textTheme.titleMedium?.merge(tabularStyle).copyWith(
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 2),
-                                // Row 2: rate / discount on the left, controls on the right
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: Wrap(
+                                      const SizedBox(height: 2),
+                                      Wrap(
                                         spacing: 8,
                                         children: [
                                           Text(
                                             '${formatRupees(line.ratePaise)} / unit',
-                                            style: Theme.of(context).textTheme.bodySmall,
+                                            style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: AppColors.lightMuted),
                                           ),
                                           if (line.discountPaise > 0)
                                             Text(
                                               'Disc: ${formatRupees(line.discountPaise)}',
-                                              style: TextStyle(fontSize: 12, color: Colors.green.shade700),
+                                              style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: AppColors.lightSuccess),
                                             ),
                                         ],
                                       ),
-                                    ),
-                                    IconButton(
-                                      constraints: BoxConstraints(minWidth: 44, minHeight: 44),
-                                      tooltip: tr(context, 'Quantity kam karo'),
-                                      icon: const Icon(Icons.remove_circle_outline),
-                                      onPressed: () {
-                                        final newQty = line.qtyMilli - 1000;
-                                        ref.read(newBillProvider.notifier).updateLineQty(index, newQty);
-                                      },
-                                    ),
-                                    InkWell(
-                                      onTap: () => _showEditQtyDialog(index, line),
-                                      child: Container(
-                                        constraints: const BoxConstraints(minWidth: 36),
-                                        alignment: Alignment.center,
-                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                                        decoration: BoxDecoration(
-                                          border: Border.all(color: Colors.grey.shade400),
-                                          borderRadius: BorderRadius.circular(4),
-                                        ),
-                                        child: Text(
-                                          formatMilliUnits(line.qtyMilli),
-                                          style: Theme.of(context).textTheme.titleSmall?.merge(tabularStyle),
-                                        ),
-                                      ),
-                                    ),
-                                    IconButton(
-                                      constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
-                                      tooltip: 'Quantity badhao',
-                                      icon: const Icon(Icons.add_circle_outline),
-                                      onPressed: () {
-                                        ref.read(newBillProvider.notifier).updateLineQty(index, line.qtyMilli + 1000);
-                                      },
-                                    ),
-                                    IconButton(
-                                      constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
-                                      tooltip: 'Discount',
-                                      icon: Icon(
-                                        Icons.discount,
-                                        color: line.discountPaise > 0 ? Colors.green : Colors.grey,
-                                      ),
-                                      onPressed: () => _showEditDiscountDialog(index, line),
-                                    ),
-                                  ],
+                                    ],
+                                  ),
                                 ),
+                                const SizedBox(width: 6),
+                                // Qty stepper pill
+                                Container(
+                                  decoration: BoxDecoration(
+                                    color: AppColors.lightBackground,
+                                    borderRadius: BorderRadius.circular(999),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      IconButton(
+                                        constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+                                        padding: EdgeInsets.zero,
+                                        tooltip: tr(context, 'Quantity kam karo'),
+                                        icon: const Icon(Icons.remove, size: 18),
+                                        onPressed: () {
+                                          final newQty = line.qtyMilli - 1000;
+                                          ref.read(newBillProvider.notifier).updateLineQty(index, newQty);
+                                        },
+                                      ),
+                                      InkWell(
+                                        onTap: () => _showEditQtyDialog(index, line),
+                                        borderRadius: BorderRadius.circular(8),
+                                        child: Container(
+                                          constraints: const BoxConstraints(minWidth: 22),
+                                          alignment: Alignment.center,
+                                          padding: const EdgeInsets.symmetric(vertical: 8),
+                                          child: Text(
+                                            formatMilliUnits(line.qtyMilli),
+                                            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800).merge(tabularStyle),
+                                          ),
+                                        ),
+                                      ),
+                                      IconButton(
+                                        constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+                                        padding: EdgeInsets.zero,
+                                        tooltip: 'Quantity badhao',
+                                        icon: const Icon(Icons.add, size: 18),
+                                        onPressed: () {
+                                          ref.read(newBillProvider.notifier).updateLineQty(index, line.qtyMilli + 1000);
+                                        },
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                IconButton(
+                                  constraints: const BoxConstraints(minWidth: 36, minHeight: 40),
+                                  padding: EdgeInsets.zero,
+                                  tooltip: 'Discount',
+                                  icon: Icon(
+                                    Icons.discount_outlined,
+                                    size: 20,
+                                    color: line.discountPaise > 0 ? AppColors.lightSuccess : AppColors.lightMuted,
+                                  ),
+                                  onPressed: () => _showEditDiscountDialog(index, line),
+                                ),
+                                ConstrainedBox(
+                                  constraints: const BoxConstraints(minWidth: 58),
+                                  child: Text(
+                                    formatRupees(lineTotal),
+                                    textAlign: TextAlign.right,
+                                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800).merge(tabularStyle),
+                                  ),
+                                ),
+                                const SizedBox(width: 6),
                               ],
                             ),
                           ),
