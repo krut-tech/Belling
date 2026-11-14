@@ -3,6 +3,7 @@ import '../../core/widgets/motion.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_colors.dart';
+import '../../data/providers.dart';
 import '../../core/widgets/belling_ui.dart';
 import '../../sync/auth_sync_service.dart';
 import '../../sync/profile_sync_service.dart';
@@ -256,6 +257,58 @@ class _BackupAndSyncPageState extends ConsumerState<BackupAndSyncPage> {
     }
   }
 
+  Widget _devicesCard() {
+    final devices = ref.watch(devicesListProvider).valueOrNull ?? const [];
+    final me = ref.watch(currentDeviceIdProvider);
+    if (devices.isEmpty) return const SizedBox.shrink();
+    return SoftCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Devices (${devices.length})',
+              style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
+          const SizedBox(height: 12),
+          for (final d in devices)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: Row(
+                children: [
+                  IconTile(
+                    icon: Icons.smartphone_rounded,
+                    color: d.id == me ? AppColors.blue : AppColors.lightMuted,
+                    background: d.id == me ? AppColors.blueBg : AppColors.lightBackground,
+                    size: 38,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(d.id == me ? '${d.name} (is phone)' : d.name,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
+                        Text(
+                          d.id == me
+                              ? 'Abhi active'
+                              : 'Last: ${d.updatedAt.toLocal().toString().substring(0, 16)}',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: d.id == me ? AppColors.lightSuccess : AppColors.lightMuted,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final authService = ref.watch(authSyncServiceProvider);
@@ -354,6 +407,8 @@ class _BackupAndSyncPageState extends ConsumerState<BackupAndSyncPage> {
                     ],
                   ),
               ),
+              const SizedBox(height: 16),
+              _devicesCard(),
             ] else ...[
               SoftCard(
                   child: Column(

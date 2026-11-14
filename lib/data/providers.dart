@@ -1,5 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:drift/drift.dart' show OrderingTerm;
+
 import 'database.dart';
 import 'records.dart';
 import 'repositories/business_repository.dart';
@@ -29,6 +31,16 @@ final activeBusinessProvider = StreamProvider<Business?>((ref) {
 final activeDeviceProvider = StreamProvider<Device?>((ref) {
   final db = ref.watch(databaseProvider);
   return (db.select(db.devices)..limit(1)).watchSingleOrNull();
+});
+
+/// All devices registered for this business (this phone, shop tablet ...).
+final devicesListProvider = StreamProvider<List<Device>>((ref) {
+  final db = ref.watch(databaseProvider);
+  final businessId = ref.watch(currentBusinessIdProvider);
+  return (db.select(db.devices)
+        ..where((d) => d.businessId.equals(businessId))
+        ..orderBy([(d) => OrderingTerm.desc(d.updatedAt)]))
+      .watch();
 });
 
 final currentBusinessIdProvider = Provider<String>((ref) {

@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/money.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/belling_ui.dart';
+import '../../data/database.dart';
 import '../../data/providers.dart';
 import '../../l10n/app_localizations.dart';
 import 'csv_export_service.dart';
@@ -12,6 +13,86 @@ import 'reports_providers.dart';
 import 'reports_repository.dart';
 import '../../core/tr_text.dart';
 import '../../core/tr.dart';
+
+/// 0 = B2B / B2C, 1 = HSN, 2 = Credit notes
+final _gstTabProvider = StateProvider.autoDispose<int>((ref) => 0);
+
+class _HsnRow {
+  _HsnRow(this.hsn, this.rateBp);
+  final String hsn;
+  final int rateBp;
+  int qtyMilli = 0;
+  int taxable = 0;
+  int tax = 0;
+}
+
+class _NoteRow {
+  _NoteRow(this.number, this.date, this.party, this.original, this.total, this.tax);
+  final String number;
+  final DateTime date;
+  final String party;
+  final String original;
+  final int total;
+  final int tax;
+}
+
+class _GstDetail {
+  _GstDetail(this.hsn, this.notes);
+  final List<_HsnRow> hsn;
+  final List<_NoteRow> notes;
+}
+
+final _gstDetailProvider = FutureProvider.autoDispose<_GstDetail>((ref) async {
+  ref.watch(reportsRefreshProvider);
+  final db = ref.watch(databaseProvider);
+  final businessId = ref.watch(currentBusinessIdProvider);
+  final range = ref.watch(reportsDateRangeProvider);
+  final docs = await (db.select(db.documents)
+        ..where((t) =>
+            t.businessId.equals(businessId) &
+            t.issuedAt.isBiggerOrEqualValue(range.start) &
+            t.issuedAt.isSmallerOrEqualValue(range.end)))
+      .get();
+  final ids = docs.map((d) => d.id).toList();
+  final lines = await (db.select(db.documentLines)
+        ..where((t) => t.businessId.equals(businessId) & t.documentId.isIn(ids)))
+      .get();
+  final parties = {
+    for (final p in await (db.select(db.parties)..where((t) => t.businessId.equals(businessId))).get()) p.id: p,
+  };
+  final byDoc = <String, List<DocumentLine>>{};
+  for (final l in lines) {
+    byDoc.putIfAbsent(l.documentId, () => []).add(l);
+  }
+  final docById = {for (final d in docs) d.id: d};
+  final hsn = <String, _HsnRow>{};
+  final notes = <_NoteRow>[];
+  for (final d in docs) {
+    final mult = d.docType == 'credit_note' ? -1 : 1;
+    var taxSum = 0;
+    for (final l in byDoc[d.id] ?? const <DocumentLine>[]) {
+      final row = hsn.putIfAbsent('${l.hsn}|${l.gstRateBp}', () => _HsnRow(l.hsn, l.gstRateBp));
+      row.qtyMilli += mult * l.qtyMilli;
+      row.taxable += mult * l.taxablePaise;
+      final t = l.cgstPaise + l.sgstPaise + l.igstPaise;
+      row.tax += mult * t;
+      taxSum += t;
+    }
+    if (d.docType == 'credit_note') {
+      notes.add(_NoteRow(
+        d.number,
+        d.issuedAt,
+        d.partyId == null ? 'Walk-in' : (parties[d.partyId]?.name ?? ''),
+        d.refDocumentId == null ? '' : (docById[d.refDocumentId]?.number ?? ''),
+        d.totalPaise,
+        taxSum,
+      ));
+    }
+  }
+  final hsnRows = hsn.values.toList()..sort((a, b) => a.hsn.compareTo(b.hsn));
+  notes.sort((a, b) => b.date.compareTo(a.date));
+  return _GstDetail(hsnRows, notes);
+});
 
 class GstSummaryPage extends ConsumerWidget {
   const GstSummaryPage({super.key});
@@ -21,6 +102,7 @@ class GstSummaryPage extends ConsumerWidget {
     final l10n = AppLocalizations.of(context)!;
     final dateRange = ref.watch(reportsDateRangeProvider);
     final summaryAsync = ref.watch(gstSummaryProvider);
+    final tab = ref.watch(_gstTabProvider);
 
     return Scaffold(
       body: SafeArea(
@@ -154,6 +236,19 @@ class GstSummaryPage extends ConsumerWidget {
                         const SizedBox(height: 16),
                       ],
 
+                      Wrap(
+                        spacing: 8,
+                        children: [
+                          for (final e in const [(0, 'B2B / B2C'), (1, 'HSN'), (2, 'Credit notes')])
+                            ChoiceChip(
+                              label: Text(e.$2),
+                              selected: tab == e.$1,
+                              onSelected: (_) => ref.read(_gstTabProvider.notifier).state = e.$1,
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 14),
+                      if (tab == 1) _hsnCard(ref) else if (tab == 2) _notesCard(ref) else ...[
                       // B2B Section
                       _buildSectionCard(
                         context,
@@ -199,6 +294,7 @@ class GstSummaryPage extends ConsumerWidget {
                           ],
                         ),
                       ),
+                      ],
                     ]),
                   );
                 },
@@ -209,6 +305,112 @@ class GstSummaryPage extends ConsumerWidget {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _hsnCard(WidgetRef ref) {
+    final detail = ref.watch(_gstDetailProvider);
+    return detail.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (e, _) => Text('Error: $e'),
+      data: (d) => SoftCard(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('HSN summary (credit notes minus)',
+                style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
+            const SizedBox(height: 12),
+            if (d.hsn.isEmpty)
+              const Text('Koi data nahi', style: TextStyle(color: AppColors.lightMuted))
+            else
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: DataTable(
+                  columnSpacing: 16,
+                  headingRowHeight: 40,
+                  headingTextStyle: const TextStyle(
+                      color: AppColors.lightMuted, fontSize: 12, fontWeight: FontWeight.w700),
+                  columns: const [
+                    DataColumn(label: Text('HSN')),
+                    DataColumn(label: Text('Rate')),
+                    DataColumn(label: Text('Qty')),
+                    DataColumn(label: Text('Taxable')),
+                    DataColumn(label: Text('Tax')),
+                  ],
+                  rows: [
+                    for (final r in d.hsn)
+                      DataRow(cells: [
+                        DataCell(Text(r.hsn.isEmpty ? '-' : r.hsn)),
+                        DataCell(StatusBadge('${formatGstRateBp(r.rateBp)}%',
+                            color: AppColors.accent, background: AppColors.accentBg)),
+                        DataCell(Text(formatMilliUnits(r.qtyMilli))),
+                        DataCell(Text(formatRupees(r.taxable))),
+                        DataCell(Text(formatRupees(r.tax))),
+                      ]),
+                  ],
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _notesCard(WidgetRef ref) {
+    final detail = ref.watch(_gstDetailProvider);
+    return detail.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (e, _) => Text('Error: $e'),
+      data: (d) => d.notes.isEmpty
+          ? const SoftCard(
+              child: Text('Is period me koi credit note nahi', style: TextStyle(color: AppColors.lightMuted)))
+          : Column(
+              children: [
+                for (final n in d.notes)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: SoftCard(
+                      padding: const EdgeInsets.all(13),
+                      child: Row(
+                        children: [
+                          const IconTile(
+                            icon: Icons.assignment_return_outlined,
+                            color: AppColors.warn,
+                            background: AppColors.warnBg,
+                            size: 42,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(n.number, style: const TextStyle(fontWeight: FontWeight.w800)),
+                                Text(
+                                  '${n.party} • ${n.date.toIso8601String().substring(0, 10)}'
+                                  '${n.original.isEmpty ? '' : ' • ${n.original}'}',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                      fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.lightMuted),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              Text('− ${formatRupees(n.total)}', style: const TextStyle(fontWeight: FontWeight.w800)),
+                              Text('GST ${formatRupees(n.tax)}',
+                                  style: const TextStyle(
+                                      fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.lightMuted)),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+              ],
+            ),
     );
   }
 
