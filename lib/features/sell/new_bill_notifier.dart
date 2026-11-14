@@ -1,8 +1,10 @@
+import '../../core/activity_log.dart';
 import 'dart:convert';
 import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/business_math.dart';
+import '../../core/money.dart';
 import '../../core/tax.dart';
 import '../../data/records.dart';
 import '../../data/database.dart';
@@ -504,6 +506,15 @@ class NewBillNotifier extends StateNotifier<NewBillState> {
       } catch (_) {}
 
       await _markEstimateBilled(issuedDoc.id);
+
+      final discountPaise = issueLines.fold<int>(0, (a, l) => a + l.discountPaise);
+      if (discountPaise > 0) {
+        await logActivity(
+          ref.read(recordsRepositoryProvider),
+          'Discount given',
+          '${issuedDoc.number} · ${formatRupees(discountPaise)} off',
+        );
+      }
 
       state = NewBillState(isLoaded: true, businessStateCode: state.businessStateCode);
 

@@ -1,3 +1,4 @@
+import '../../core/activity_log.dart';
 import 'package:flutter/material.dart' hide Text;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -353,6 +354,7 @@ class _ItemFormDialogState extends ConsumerState<ItemFormDialog> {
                             final repo = ref.read(productRepositoryProvider);
                             final productId = widget.item!.product.id;
                             await repo.archive(productId);
+                            await logActivity(ref.read(recordsRepositoryProvider), 'Item deleted', widget.item!.product.name);
                             nav.pop(true);
                           }
                         },

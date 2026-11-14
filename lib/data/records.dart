@@ -49,6 +49,7 @@ class RecordKinds {
   static const estimate = 'estimate';
   static const itemMeta = 'item_meta'; // id == product id
   static const supplierPayment = 'supplier_payment';
+  static const activity = 'activity';
 }
 
 class RecordsRepository {

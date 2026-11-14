@@ -1,3 +1,4 @@
+import '../../core/activity_log.dart';
 import 'package:flutter/material.dart' hide Text;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -84,6 +85,11 @@ Future<bool> showReturnDialog(BuildContext context, WidgetRef ref, Document invo
           returnQtyByLineId: qtys,
           reason: reason.text.trim().isEmpty ? 'Customer return' : reason.text.trim(),
         );
+    await logActivity(
+      ref.read(recordsRepositoryProvider),
+      'Goods returned',
+      'Bill ${invoice.number} · ${reason.text.trim().isEmpty ? 'Customer return' : reason.text.trim()}',
+    );
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Return ho gaya. Credit note ban gaya, stock wapas add hua.')));
     }

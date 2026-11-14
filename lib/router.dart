@@ -19,6 +19,7 @@ import 'features/more/more_page.dart';
 import 'features/parties/parties_page.dart';
 import 'features/reports/gst_summary_page.dart';
 import 'features/reports/insights_page.dart';
+import 'features/business/activity_page.dart';
 import 'features/reports/reports_page.dart';
 import 'features/sell/done_page.dart';
 import 'features/sell/new_bill_page.dart';
@@ -128,6 +129,10 @@ final appRouter = GoRouter(
                 GoRoute(
                   path: 'purchase/new',
                   builder: (context, state) => const NewPurchasePage(),
+                ),
+                GoRoute(
+                  path: 'activity',
+                  builder: (context, state) => const ActivityPage(),
                 ),
                 GoRoute(
                   path: 'staff',

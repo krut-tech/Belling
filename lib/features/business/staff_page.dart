@@ -162,7 +162,18 @@ class _StaffPageState extends ConsumerState<StaffPage> {
       body: SafeArea(
         child: Column(
           children: [
-            const BellingHeader(title: 'Staff & roles', subtitle: 'Kaun kya dekh sakta hai', showBack: true),
+            BellingHeader(
+              title: 'Staff & roles',
+              subtitle: 'Kaun kya dekh sakta hai',
+              showBack: true,
+              actions: [
+                SoftIconButton(
+                  icon: Icons.history_rounded,
+                  tooltip: 'Activity log',
+                  onTap: () => context.push('/more/activity'),
+                ),
+              ],
+            ),
             Expanded(
               child: _loading
                   ? const Center(child: CircularProgressIndicator())

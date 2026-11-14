@@ -1,3 +1,4 @@
+import '../../core/activity_log.dart';
 import 'package:flutter/material.dart' hide Text;
 import '../../core/widgets/motion.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -104,6 +105,11 @@ class _DonePageState extends ConsumerState<DonePage> {
           reason: reasonController.text.trim(),
         );
 
+        await logActivity(
+          ref.read(recordsRepositoryProvider),
+          'Bill cancelled',
+          '${_docWithParty?.document.number ?? ''} · ${reasonController.text.trim()}',
+        );
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text(l10n.invoiceCancelled)),
