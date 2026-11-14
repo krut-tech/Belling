@@ -1,10 +1,14 @@
+import 'dart:io';
 import 'package:flutter/material.dart' hide Text;
+import 'package:path_provider/path_provider.dart';
 import '../../core/widgets/motion.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:share_plus/share_plus.dart';
 
+import '../../core/invoice_style.dart';
 import '../../core/money.dart';
+import '../../core/statement_pdf.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/belling_ui.dart';
 import '../../data/database.dart';
@@ -54,6 +58,43 @@ class PartyDetailPage extends ConsumerWidget {
     Share.share(text);
   }
 
+  Future<void> _shareStatement(
+    BuildContext context,
+    WidgetRef ref,
+    Party party,
+    Business? business,
+    List<LedgerItem> items,
+  ) async {
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      final db = ref.read(databaseProvider);
+      final style = await InvoiceStyleStore.load(db);
+      final assets = await InvoiceStyleStore.loadAssets(style);
+      final bytes = await generateStatementPdf(
+        partyName: party.name,
+        partyPhone: party.phone,
+        partyGstin: party.gstin,
+        shopName: business?.name ?? 'Store',
+        shopGstin: business?.gstin,
+        shopAddress: business?.address,
+        items: items,
+        style: style,
+        assets: assets,
+      );
+      final dir = await getTemporaryDirectory();
+      final safe = party.name.replaceAll(RegExp(r'[^A-Za-z0-9]+'), '_');
+      final file = File('${dir.path}/Statement_$safe.pdf');
+      await file.writeAsBytes(bytes, flush: true);
+      await Share.shareXFiles(
+        [XFile(file.path, mimeType: 'application/pdf', name: 'Statement_$safe.pdf')],
+        text: '${business?.name ?? 'Store'} - account statement for ${party.name}',
+        subject: 'Account statement',
+      );
+    } catch (e) {
+      messenger.showSnackBar(SnackBar(content: Text('PDF nahi ban paya: $e')));
+    }
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
@@ -84,6 +125,11 @@ class PartyDetailPage extends ConsumerWidget {
                   subtitle: party.phone,
                   showBack: true,
                   actions: [
+                    SoftIconButton(
+                      icon: Icons.picture_as_pdf_outlined,
+                      tooltip: 'Statement PDF',
+                      onTap: () => _shareStatement(context, ref, party, business, ledgerAsync.valueOrNull ?? const []),
+                    ),
                     SoftIconButton(
                       icon: Icons.edit_outlined,
                       tooltip: l10n.editParty,
