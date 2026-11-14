@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:timezone/data/latest.dart' as tzdata;
 import 'package:timezone/timezone.dart' as tz;
 
@@ -155,7 +156,12 @@ class SmartAlerts {
 
       // 3. Backup
       await _plugin.cancel(_backupId);
-      if (await isOn(db, backupKey)) {
+      // Signed-in shops are already backed up to the cloud automatically.
+      var signedIn = false;
+      try {
+        signedIn = Supabase.instance.client.auth.currentUser != null;
+      } catch (_) {}
+      if (!signedIn && await isOn(db, backupKey)) {
         final hour = await hourFor(db, backupKey);
         final last = int.tryParse(await _get(db, lastBackupKey) ?? '');
         final due = last == null
