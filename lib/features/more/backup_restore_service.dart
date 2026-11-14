@@ -62,6 +62,13 @@ class BackupRestoreService {
 
     // 4. Share via share sheet
     await Share.shareXFiles([XFile(backupFile.path)], text: 'Universal Billing Backup');
+    try {
+      await db.into(db.appSettingsTable).insertOnConflictUpdate(
+            AppSettingsTableCompanion.insert(key: 'last_backup_at', value: '$timestamp'),
+          );
+    } catch (e) {
+      debugPrint('Could not save last backup time: $e');
+    }
     return backupFile;
   }
 

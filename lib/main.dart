@@ -6,6 +6,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'core/config.dart';
 import 'core/providers/locale_provider.dart';
 import 'core/reminder_service.dart';
+import 'core/smart_alerts.dart';
 import 'core/theme/app_theme.dart';
 import 'core/widgets/splash_gate.dart';
 import 'data/providers.dart';
@@ -123,6 +124,11 @@ class _ReminderSchedulerState extends ConsumerState<_ReminderScheduler> with Wid
 
   void _refresh() {
     ReminderService.instance.refresh(ref.read(databaseProvider), ref.read(partyRepositoryProvider));
+    SmartAlerts.instance.refresh(
+      ref.read(databaseProvider),
+      ref.read(productRepositoryProvider),
+      ref.read(documentRepositoryProvider),
+    );
   }
 
   @override

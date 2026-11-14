@@ -3,6 +3,13 @@
 /// Keyed by the ENGLISH text (see `kEnglish` in tr.dart, which maps the app's
 /// Hinglish strings to English). Strings missing here fall back to Hinglish.
 const Map<String, String> kHindi = {
+  'Tell me when an item\'s stock falls below its reorder level': 'जब आइटम का स्टॉक रीऑर्डर लेवल से नीचे जाए तो बताएं',
+  'Old dues alert': 'पुराने उधार का अलर्ट',
+  'Reminder for bills unpaid for over 30 days': '30 दिन से ज़्यादा बाकी बिलों का रिमाइंडर',
+  'Backup reminder': 'बैकअप रिमाइंडर',
+  'Remind me if no backup for 7 days': '7 दिन से बैकअप न लिया हो तो याद दिलाएं',
+  'Low stock alert': 'कम स्टॉक का अलर्ट',
+  'These notifications update when the app opens and closes, and arrive at the "Send at" time above.': 'ये नोटिफ़िकेशन ऐप खुलने और बंद होने पर अपडेट होते हैं और ऊपर दिए "भेजने का समय" पर आते हैं।',
   'All': 'सभी',
   'Remove': 'हटाएं',
   'No': 'नहीं',
@@ -154,6 +161,13 @@ const Map<String, String> kHindi = {
 };
 
 const Map<String, String> kGujarati = {
+  'Tell me when an item\'s stock falls below its reorder level': 'જ્યારે આઇટમનો સ્ટોક રીઓર્ડર લેવલથી નીચે જાય ત્યારે જણાવો',
+  'Old dues alert': 'જૂના ઉધારનો એલર્ટ',
+  'Reminder for bills unpaid for over 30 days': '30 દિવસથી વધુ બાકી બિલનું રિમાઇન્ડર',
+  'Backup reminder': 'બેકઅપ રિમાઇન્ડર',
+  'Remind me if no backup for 7 days': '7 દિવસથી બેકઅપ ન લીધો હોય તો યાદ અપાવો',
+  'Low stock alert': 'ઓછા સ્ટોકનો એલર્ટ',
+  'These notifications update when the app opens and closes, and arrive at the "Send at" time above.': 'આ નોટિફિકેશન એપ ખુલે અને બંધ થાય ત્યારે અપડેટ થાય છે અને ઉપરના "મોકલવાનો સમય" પર આવે છે.',
   'All': 'બધા',
   'Remove': 'કાઢી નાખો',
   'No': 'ના',

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/money.dart';
 import '../../core/reminder_service.dart';
+import '../../core/smart_alerts.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/belling_ui.dart';
 import '../../data/providers.dart';
@@ -40,6 +41,7 @@ class RemindersPage extends ConsumerWidget {
                   if (owing.isEmpty) {
                     return ListView(padding: const EdgeInsets.fromLTRB(16, 8, 16, 24), children: const [
                       _AutoReminderCard(),
+                      _SmartAlertsCard(),
                       Padding(padding: EdgeInsets.all(24), child: Center(child: Text('Kisi ka udhar baaki nahi. 🎉'))),
                     ]);
                   }
@@ -48,6 +50,7 @@ class RemindersPage extends ConsumerWidget {
                     padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
                     children: [
                       const _AutoReminderCard(),
+                      const _SmartAlertsCard(),
                       HeroCard(
                         child: Row(
                           children: [
@@ -213,6 +216,88 @@ class _AutoReminderCardState extends ConsumerState<_AutoReminderCard> {
             padding: EdgeInsets.fromLTRB(16, 0, 16, 8),
             child: Text(
               'Notification ka number app khulne aur band hone par update hota hai. Customer ko message khud nahi jata, aap notification tap karke reminder bhejte ho.',
+              style: TextStyle(fontSize: 12, color: AppColors.lightMuted),
+            ),
+          ),
+        ]),
+      ),
+    );
+  }
+}
+
+/// Toggles for low stock, old dues and backup notifications.
+class _SmartAlertsCard extends ConsumerStatefulWidget {
+  const _SmartAlertsCard();
+
+  @override
+  ConsumerState<_SmartAlertsCard> createState() => _SmartAlertsCardState();
+}
+
+class _SmartAlertsCardState extends ConsumerState<_SmartAlertsCard> {
+  final _on = <String, bool>{};
+  bool _loaded = false;
+
+  static const _keys = [SmartAlerts.lowStockKey, SmartAlerts.oldDuesKey, SmartAlerts.backupKey];
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    final db = ref.read(databaseProvider);
+    for (final k in _keys) {
+      _on[k] = await SmartAlerts.instance.isOn(db, k);
+    }
+    if (mounted) setState(() => _loaded = true);
+  }
+
+  Future<void> _toggle(String key, bool v) async {
+    final db = ref.read(databaseProvider);
+    if (v) {
+      final ok = await ReminderService.instance.requestPermission();
+      if (!ok) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Notification ki permission chahiye. Phone Settings > Apps > Belling > Notifications on karo.')));
+        }
+        return;
+      }
+    }
+    await SmartAlerts.instance.setOn(db, key, v);
+    setState(() => _on[key] = v);
+    await SmartAlerts.instance.refresh(db, ref.read(productRepositoryProvider), ref.read(documentRepositoryProvider));
+  }
+
+  Widget _tile(String key, IconData icon, Color color, Color bg, String title, String sub) {
+    return SwitchListTile(
+      secondary: IconTile(icon: icon, color: color, background: bg),
+      activeTrackColor: AppColors.accent,
+      title: Text(title, style: const TextStyle(fontWeight: FontWeight.w800)),
+      subtitle: Text(sub),
+      value: _on[key] ?? false,
+      onChanged: (v) => _toggle(key, v),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!_loaded) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 14),
+      child: SoftCard(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Column(children: [
+          _tile(SmartAlerts.lowStockKey, Icons.inventory_2_outlined, AppColors.lightWarning, AppColors.warnBg,
+              'Low stock alert', 'Item ka stock reorder level se neeche jaye to batao'),
+          _tile(SmartAlerts.oldDuesKey, Icons.hourglass_bottom_rounded, AppColors.lightDanger, AppColors.dueBg,
+              'Purana udhar alert', '30 din se zyada baaki bills ka reminder'),
+          _tile(SmartAlerts.backupKey, Icons.cloud_upload_outlined, AppColors.blue, AppColors.blueBg,
+              'Backup reminder', '7 din se backup na liya ho to yaad dilao'),
+          const Padding(
+            padding: EdgeInsets.fromLTRB(16, 4, 16, 8),
+            child: Text(
+              'Ye notifications app khulne aur band hone par update hote hain, aur upar wale "Kab bhejna hai" time par aate hain.',
               style: TextStyle(fontSize: 12, color: AppColors.lightMuted),
             ),
           ),
