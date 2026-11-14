@@ -1185,7 +1185,7 @@ class _CustomerNameFieldState extends ConsumerState<_CustomerNameField> {
       if (next.isEmpty && _c.text.isNotEmpty) _c.clear();
     });
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+      padding: EdgeInsets.zero,
       child: TextField(
         controller: _c,
         textCapitalization: TextCapitalization.words,
