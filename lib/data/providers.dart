@@ -104,6 +104,18 @@ final todayDocumentsStreamProvider = StreamProvider<List<DocumentWithParty>>((re
   return repo.watchTodayDocuments();
 });
 
+/// Money received today by payment method.
+final todayPaymentSplitProvider = StreamProvider<Map<String, int>>((ref) {
+  return ref.watch(documentRepositoryProvider).watchTodayPaymentSplit();
+});
+
+/// Yesterday's net sales (for the "vs yesterday" badge). Refreshes when today's bills change.
+final yesterdaySalesProvider = FutureProvider<int>((ref) {
+  ref.watch(todayDocumentsStreamProvider);
+  final y = DateTime.now().subtract(const Duration(days: 1));
+  return ref.watch(documentRepositoryProvider).netSalesForDay(y);
+});
+
 /// All bills with paid/due (one shared computation for All Bills + party ledger).
 final billsOverviewProvider = StreamProvider<BillsOverview>((ref) {
   return ref.watch(documentRepositoryProvider).watchBillsOverview();

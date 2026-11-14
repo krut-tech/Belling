@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart' hide Text;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../../core/money.dart';
 import '../../core/theme/app_colors.dart';
@@ -9,6 +10,25 @@ import '../../data/providers.dart';
 import '../../data/records.dart';
 import '../sell/new_bill_notifier.dart';
 import '../../core/tr_text.dart';
+
+String _estimateText(AppRecord e) {
+  final who = e.str('party_name');
+  final lines = ((e.data['lines'] as List?) ?? const []).whereType<Map>();
+  final b = StringBuffer('*Estimate / Quotation*\n');
+  if (who.isNotEmpty) b.writeln('Customer: $who');
+  b.writeln('Date: ${e.createdAt.toString().substring(0, 10)}');
+  b.writeln();
+  for (final l in lines) {
+    final qty = ((l['qtyMilli'] as num?) ?? 1000) / 1000;
+    final rate = (l['ratePaise'] as num?)?.toInt() ?? 0;
+    final q = qty == qty.roundToDouble() ? qty.toInt().toString() : qty.toString();
+    b.writeln('• ${l['name']} × $q @ ${formatRupees(rate)}');
+  }
+  b.writeln();
+  b.writeln('*Total: ${formatRupees(e.integer('total_paise'))}*');
+  b.writeln('(Rates GST ke sath, estimate hai — final bill alag se milega)');
+  return b.toString();
+}
 
 final estimatesProvider = FutureProvider.autoDispose<List<AppRecord>>(
   (ref) => ref.watch(recordsRepositoryProvider).list(RecordKinds.estimate),
@@ -74,8 +94,17 @@ class EstimatesPage extends ConsumerWidget {
                                           ],
                                         ),
                                       ),
-                                      Text(formatRupees(e.integer('total_paise')),
-                                          style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
+                                      Column(
+                                        crossAxisAlignment: CrossAxisAlignment.end,
+                                        children: [
+                                          Text(formatRupees(e.integer('total_paise')),
+                                              style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
+                                          const SizedBox(height: 4),
+                                          e.str('status') == 'billed'
+                                              ? StatusBadge.good('Billed')
+                                              : const StatusBadge('Open', color: AppColors.blue, background: AppColors.blueBg),
+                                        ],
+                                      ),
                                       PopupMenuButton<String>(
                                         onSelected: (v) async {
                                           if (v == 'bill') {
@@ -94,14 +123,31 @@ class EstimatesPage extends ConsumerWidget {
                                     ],
                                   ),
                                   const SizedBox(height: 12),
-                                  GradientButton(
-                                    label: 'Bill banao',
-                                    height: 46,
-                                    expand: true,
-                                    onPressed: () async {
-                                      await ref.read(newBillProvider.notifier).loadEstimate(e);
-                                      if (context.mounted) context.go('/sell/new');
-                                    },
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: OutlinedButton.icon(
+                                          style: OutlinedButton.styleFrom(minimumSize: const Size(0, 46)),
+                                          onPressed: () => Share.share(_estimateText(e)),
+                                          icon: const Icon(Icons.share_outlined, size: 18, color: AppColors.whatsappGreen),
+                                          label: const Text('WhatsApp'),
+                                        ),
+                                      ),
+                                      if (e.str('status') != 'billed') ...[
+                                        const SizedBox(width: 10),
+                                        Expanded(
+                                          child: GradientButton(
+                                            label: 'Bill banao',
+                                            height: 46,
+                                            expand: true,
+                                            onPressed: () async {
+                                              await ref.read(newBillProvider.notifier).loadEstimate(e);
+                                              if (context.mounted) context.go('/sell/new');
+                                            },
+                                          ),
+                                        ),
+                                      ],
+                                    ],
                                   ),
                                 ],
                               ),

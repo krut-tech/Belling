@@ -404,8 +404,12 @@ class NewBillNotifier extends StateNotifier<NewBillState> {
     return true;
   }
 
+  /// Estimate that is being converted to a bill (marked 'billed' once issued).
+  String? _estimateId;
+
   /// Replaces the cart with the lines of a saved estimate.
   Future<void> loadEstimate(AppRecord estimate) async {
+    _estimateId = estimate.id;
     final docRepo = ref.read(documentRepositoryProvider);
     await docRepo.saveDraftCart(
       partyId: estimate.data['party_id'] as String?,
@@ -422,6 +426,7 @@ class NewBillNotifier extends StateNotifier<NewBillState> {
   Future<void> clearCart() async {
     final docRepo = ref.read(documentRepositoryProvider);
     await docRepo.clearDraftCart();
+    _estimateId = null;
     state = NewBillState(isLoaded: true, businessStateCode: state.businessStateCode);
   }
 
@@ -498,12 +503,33 @@ class NewBillNotifier extends StateNotifier<NewBillState> {
         await docRepo.clearDraftCart();
       } catch (_) {}
 
+      await _markEstimateBilled(issuedDoc.id);
+
       state = NewBillState(isLoaded: true, businessStateCode: state.businessStateCode);
 
       return issuedDoc;
     } catch (e) {
       state = state.copyWith(isSaving: false, error: e.toString());
       return null;
+    }
+  }
+
+  Future<void> _markEstimateBilled(String documentId) async {
+    final id = _estimateId;
+    _estimateId = null;
+    if (id == null) return;
+    try {
+      final repo = ref.read(recordsRepositoryProvider);
+      final e = await repo.get(id);
+      if (e == null) return;
+      await repo.save(
+        RecordKinds.estimate,
+        {...e.data, 'status': 'billed', 'billed_doc_id': documentId},
+        id: id,
+        createdAt: e.createdAt,
+      );
+    } catch (_) {
+      // The bill is already issued; the estimate just stays 'open'.
     }
   }
 

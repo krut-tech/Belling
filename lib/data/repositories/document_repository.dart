@@ -53,6 +53,44 @@ class DocumentRepository {
 
   DocumentRepository(this.db, this.businessId, this.deviceId);
 
+  /// Money received today per payment method (method -> paise).
+  Stream<Map<String, int>> watchTodayPaymentSplit() {
+    final now = DateTime.now();
+    final start = DateTime(now.year, now.month, now.day);
+    final end = DateTime(now.year, now.month, now.day, 23, 59, 59, 999);
+    final q = db.select(db.payments)
+      ..where((p) =>
+          p.businessId.equals(businessId) &
+          p.paidAt.isBiggerOrEqualValue(start) &
+          p.paidAt.isSmallerOrEqualValue(end));
+    return q.watch().map((rows) {
+      final m = <String, int>{};
+      for (final p in rows) {
+        m[p.method] = (m[p.method] ?? 0) + p.amountPaise;
+      }
+      return m;
+    });
+  }
+
+  /// Net sales (invoices minus credit notes, cancelled excluded) of one day.
+  Future<int> netSalesForDay(DateTime day) async {
+    final start = DateTime(day.year, day.month, day.day);
+    final end = DateTime(day.year, day.month, day.day, 23, 59, 59, 999);
+    final rows = await (db.select(db.documents)
+          ..where((d) =>
+              d.businessId.equals(businessId) &
+              d.issuedAt.isBiggerOrEqualValue(start) &
+              d.issuedAt.isSmallerOrEqualValue(end)))
+        .get();
+    var total = 0;
+    for (final d in rows) {
+      if (d.status == 'cancelled') continue;
+      if (d.docType == 'invoice') total += d.totalPaise;
+      if (d.docType == 'credit_note') total -= d.totalPaise;
+    }
+    return total;
+  }
+
   Stream<List<DocumentWithParty>> watchTodayDocuments() {
     final now = DateTime.now();
     final startOfToday = DateTime(now.year, now.month, now.day);

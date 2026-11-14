@@ -51,6 +51,12 @@ class SellPage extends ConsumerWidget {
       }
     }
 
+    final split = ref.watch(todayPaymentSplitProvider).valueOrNull ?? const <String, int>{};
+    final yesterday = ref.watch(yesterdaySalesProvider).valueOrNull ?? 0;
+    final receivedPaise = split.values.fold<int>(0, (a, b) => a + b);
+    final udharPaise = salesPaise > receivedPaise ? salesPaise - receivedPaise : 0;
+    final changePct = yesterday > 0 ? ((salesPaise - yesterday) * 100 / yesterday).round() : null;
+
     return Scaffold(
       floatingActionButton: FloatingActionButton.extended(
         backgroundColor: AppColors.accent,
@@ -74,9 +80,21 @@ class SellPage extends ConsumerWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          l10n.todayBills,
-                          style: const TextStyle(color: Color(0xB3FFFFFF), fontSize: 13, fontWeight: FontWeight.w600),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                l10n.todayBills,
+                                style: const TextStyle(color: Color(0xB3FFFFFF), fontSize: 13, fontWeight: FontWeight.w600),
+                              ),
+                            ),
+                            if (changePct != null)
+                              StatusBadge(
+                                '${changePct >= 0 ? '▲' : '▼'} ${changePct.abs()}% kal se',
+                                color: changePct >= 0 ? AppColors.lightSuccess : AppColors.lightDanger,
+                                background: changePct >= 0 ? AppColors.goodBg : AppColors.dueBg,
+                              ),
+                          ],
                         ),
                         const SizedBox(height: 6),
                         Text(
@@ -92,11 +110,12 @@ class SellPage extends ConsumerWidget {
                         const SizedBox(height: 14),
                         const Divider(height: 1, color: Color(0x26FFFFFF)),
                         const SizedBox(height: 12),
-                        const Text('Bills', style: TextStyle(color: Color(0xB3FFFFFF), fontSize: 12, fontWeight: FontWeight.w600)),
-                        const SizedBox(height: 2),
-                        Text(
-                          '$billCount',
-                          style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w800),
+                        Row(
+                          children: [
+                            _heroStat('Bills', '$billCount'),
+                            _heroStat('Mila (cash+UPI)', formatRupees(receivedPaise)),
+                            _heroStat('Udhar', formatRupees(udharPaise)),
+                          ],
                         ),
                       ],
                     ),
@@ -190,6 +209,25 @@ class SellPage extends ConsumerWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _heroStat(String label, String value) {
+    return Expanded(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(color: Color(0xB3FFFFFF), fontSize: 11, fontWeight: FontWeight.w600)),
+          const SizedBox(height: 2),
+          Text(value,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w800)),
+        ],
       ),
     );
   }
