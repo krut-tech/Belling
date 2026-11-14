@@ -123,6 +123,14 @@ class MorePage extends ConsumerWidget {
                           onTap: () => context.push('/more/staff'),
                         ),
                         _MoreRow(
+                          icon: Icons.settings_outlined,
+                          color: AppColors.lightMuted,
+                          background: AppColors.lightBackground,
+                          title: 'Settings',
+                          subtitle: 'Language, app lock, version',
+                          onTap: () => context.push('/more/settings'),
+                        ),
+                        _MoreRow(
                           icon: Icons.policy_outlined,
                           color: const Color(0xFF0F9D8A),
                           background: const Color(0xFFDDF5F1),
