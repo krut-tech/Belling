@@ -5,10 +5,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/money.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/belling_ui.dart';
-import '../../data/database.dart';
 import '../../data/providers.dart';
 import '../../l10n/app_localizations.dart';
 import 'csv_export_service.dart';
+import 'gst_detail.dart';
 import 'reports_providers.dart';
 import 'reports_repository.dart';
 import '../../core/tr_text.dart';
@@ -16,83 +16,6 @@ import '../../core/tr.dart';
 
 /// 0 = B2B / B2C, 1 = HSN, 2 = Credit notes
 final _gstTabProvider = StateProvider.autoDispose<int>((ref) => 0);
-
-class _HsnRow {
-  _HsnRow(this.hsn, this.rateBp);
-  final String hsn;
-  final int rateBp;
-  int qtyMilli = 0;
-  int taxable = 0;
-  int tax = 0;
-}
-
-class _NoteRow {
-  _NoteRow(this.number, this.date, this.party, this.original, this.total, this.tax);
-  final String number;
-  final DateTime date;
-  final String party;
-  final String original;
-  final int total;
-  final int tax;
-}
-
-class _GstDetail {
-  _GstDetail(this.hsn, this.notes);
-  final List<_HsnRow> hsn;
-  final List<_NoteRow> notes;
-}
-
-final _gstDetailProvider = FutureProvider.autoDispose<_GstDetail>((ref) async {
-  ref.watch(reportsRefreshProvider);
-  final db = ref.watch(databaseProvider);
-  final businessId = ref.watch(currentBusinessIdProvider);
-  final range = ref.watch(reportsDateRangeProvider);
-  final docs = await (db.select(db.documents)
-        ..where((t) =>
-            t.businessId.equals(businessId) &
-            t.issuedAt.isBiggerOrEqualValue(range.start) &
-            t.issuedAt.isSmallerOrEqualValue(range.end)))
-      .get();
-  final ids = docs.map((d) => d.id).toList();
-  final lines = await (db.select(db.documentLines)
-        ..where((t) => t.businessId.equals(businessId) & t.documentId.isIn(ids)))
-      .get();
-  final parties = {
-    for (final p in await (db.select(db.parties)..where((t) => t.businessId.equals(businessId))).get()) p.id: p,
-  };
-  final byDoc = <String, List<DocumentLine>>{};
-  for (final l in lines) {
-    byDoc.putIfAbsent(l.documentId, () => []).add(l);
-  }
-  final docById = {for (final d in docs) d.id: d};
-  final hsn = <String, _HsnRow>{};
-  final notes = <_NoteRow>[];
-  for (final d in docs) {
-    final mult = d.docType == 'credit_note' ? -1 : 1;
-    var taxSum = 0;
-    for (final l in byDoc[d.id] ?? const <DocumentLine>[]) {
-      final row = hsn.putIfAbsent('${l.hsn}|${l.gstRateBp}', () => _HsnRow(l.hsn, l.gstRateBp));
-      row.qtyMilli += mult * l.qtyMilli;
-      row.taxable += mult * l.taxablePaise;
-      final t = l.cgstPaise + l.sgstPaise + l.igstPaise;
-      row.tax += mult * t;
-      taxSum += t;
-    }
-    if (d.docType == 'credit_note') {
-      notes.add(_NoteRow(
-        d.number,
-        d.issuedAt,
-        d.partyId == null ? 'Walk-in' : (parties[d.partyId]?.name ?? ''),
-        d.refDocumentId == null ? '' : (docById[d.refDocumentId]?.number ?? ''),
-        d.totalPaise,
-        taxSum,
-      ));
-    }
-  }
-  final hsnRows = hsn.values.toList()..sort((a, b) => a.hsn.compareTo(b.hsn));
-  notes.sort((a, b) => b.date.compareTo(a.date));
-  return _GstDetail(hsnRows, notes);
-});
 
 class GstSummaryPage extends ConsumerWidget {
   const GstSummaryPage({super.key});
@@ -309,7 +232,7 @@ class GstSummaryPage extends ConsumerWidget {
   }
 
   Widget _hsnCard(WidgetRef ref) {
-    final detail = ref.watch(_gstDetailProvider);
+    final detail = ref.watch(gstDetailProvider);
     return detail.when(
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (e, _) => Text('Error: $e'),
@@ -357,7 +280,7 @@ class GstSummaryPage extends ConsumerWidget {
   }
 
   Widget _notesCard(WidgetRef ref) {
-    final detail = ref.watch(_gstDetailProvider);
+    final detail = ref.watch(gstDetailProvider);
     return detail.when(
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (e, _) => Text('Error: $e'),
