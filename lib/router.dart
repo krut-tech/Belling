@@ -18,6 +18,7 @@ import 'features/more/invoice_design_page.dart';
 import 'features/more/more_page.dart';
 import 'features/parties/parties_page.dart';
 import 'features/reports/gst_summary_page.dart';
+import 'features/reports/insights_page.dart';
 import 'features/reports/reports_page.dart';
 import 'features/sell/done_page.dart';
 import 'features/sell/new_bill_page.dart';
@@ -101,6 +102,10 @@ final appRouter = GoRouter(
                 GoRoute(
                   path: 'gst-summary',
                   builder: (context, state) => const GstSummaryPage(),
+                ),
+                GoRoute(
+                  path: 'insights',
+                  builder: (context, state) => const InsightsPage(),
                 ),
               ],
             ),

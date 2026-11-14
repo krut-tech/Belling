@@ -348,6 +348,29 @@ class _ReportsPageState extends ConsumerState<ReportsPage> {
                     ),
                     const SizedBox(height: 14),
 
+                    // Insights link
+                    SoftCard(
+                      onTap: () => context.push('/reports/insights'),
+                      child: Row(
+                        children: [
+                          const IconTile(icon: Icons.insights_rounded, color: AppColors.accent, background: AppColors.accentBg),
+                          const SizedBox(width: 12),
+                          const Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('Insights', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800)),
+                                Text('Item profit, best customers, slow stock, month compare',
+                                    style: TextStyle(fontSize: 12, color: AppColors.lightMuted)),
+                              ],
+                            ),
+                          ),
+                          const Icon(Icons.chevron_right, color: AppColors.lightMuted),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+
                     // Low Stock List
                     SoftCard(
                       child: Column(
