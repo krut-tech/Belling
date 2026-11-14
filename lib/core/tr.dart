@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'tr_langs.dart';
+
 /// English text for the Hinglish strings in the app.
 ///
 /// The app is written in Hinglish. When the language is English, every string
@@ -8,6 +10,38 @@ import 'package:flutter/material.dart';
 /// so a missing entry can never break a screen.
 const Map<String, String> kEnglish = {
   // generic
+  // extra Hinglish -> English
+  'Total bakaya': 'Total due',
+  'Bina bill kiye rate bhejo': 'Send rates without billing',
+  'Kahan gaya': 'Where it went',
+  'Kaun kya dekh sakta hai': 'Who can see what',
+  'Supplier se maal kharido': 'Buy stock from suppliers',
+  'Baaki rahega': 'Balance due',
+  'Data aur GST records': 'Data and GST records',
+  'Saare purane bills - kabhi delete nahi hote': 'All past bills - never deleted',
+  'Bill number ya customer ka naam': 'Bill number or customer name',
+  'Koi bill nahi mila': 'No bills found',
+  'Category chuno': 'Choose category',
+  'Nayi category / sub-category ka naam': 'New category / sub-category name',
+  'Koi nahi': 'None',
+  'Stock badhao': 'Increase stock',
+  'Category ka naam badlo': 'Rename category',
+  'Is category mein koi item nahi': 'No items in this category',
+  'Quantity badhao': 'Increase quantity',
+  'UPI QR dikhao': 'Show UPI QR',
+  'Koi data nahi': 'No data',
+  'Is period me koi credit note nahi': 'No credit notes in this period',
+  'Dusre state ka grahak · IGST lagega': 'Customer from another state · IGST applies',
+  'Bina party (cash) · CGST + SGST': 'Walk-in (cash) · CGST + SGST',
+  'Same state · CGST + SGST': 'Same state · CGST + SGST',
+  'Mila (cash+UPI)': 'Received (cash+UPI)',
+  'Udhar': 'Credit given',
+  'Dena hai': 'To pay',
+  'Koi baaki nahi hai': 'Nothing is due',
+  'Abhi active': 'Active now',
+  'Naam khaali': 'Name is empty',
+  'GSTIN galat hai (15 characters, jaise 24ABCDE1234F1Z5)': 'GSTIN is invalid (15 characters, e.g. 24ABCDE1234F1Z5)',
+  '(Rates GST ke sath, estimate hai — final bill alag se milega)': '(Rates include GST. This is an estimate; the final bill comes separately.)',
   'Sab': 'All',
   'Hatao': 'Remove',
   'Nahi': 'No',
@@ -39,7 +73,6 @@ const Map<String, String> kEnglish = {
   'Estimate save karo': 'Save as estimate',
   'Estimate save ho gaya (More > Estimates mein dekho)': 'Estimate saved (see More > Estimates)',
   'Cart khali hai': 'Cart is empty',
-  'Dusre state ka grahak · IGST lagega': 'Customer from another state · IGST applies',
   'Item par tap karke bill mein jodo': 'Tap an item to add it to the bill',
   'Quantity kam karo': 'Reduce quantity',
   'Abhi koi item nahi hai. Items tab mein item add karo.': 'No items yet. Add items in the Items tab.',
@@ -260,4 +293,16 @@ String translateToEnglish(String s) {
 bool isEnglish(BuildContext context) => Localizations.localeOf(context).languageCode == 'en';
 
 /// Translated text for [hinglish] in the current language.
-String tr(BuildContext context, String hinglish) => isEnglish(context) ? translateToEnglish(hinglish) : hinglish;
+///
+/// English: Hinglish -> English. Hindi / Gujarati: looked up by the English
+/// text (or by the string itself when it is already English). Anything
+/// without a translation is returned unchanged.
+String tr(BuildContext context, String hinglish) {
+  final code = Localizations.localeOf(context).languageCode;
+  if (code == 'en') return translateToEnglish(hinglish);
+  if (code == 'hi' || code == 'gu') {
+    final dict = code == 'hi' ? kHindi : kGujarati;
+    return dict[hinglish] ?? dict[kEnglish[hinglish]] ?? hinglish;
+  }
+  return hinglish;
+}
