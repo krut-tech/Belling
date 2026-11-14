@@ -373,10 +373,70 @@ class _NewBillPageState extends ConsumerState<NewBillPage> {
               ),
             )
           else ...[
-            // Party Selector Bar
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-              child: Material(
+            // Picker mode: category rail + item grid with a slim cart bar.
+            if (showPicker) ...[
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+                child: _partyBar(billState, l10n),
+              ),
+              if (billState.error != null)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+                  child: _errorBanner(billState),
+                ),
+              Expanded(
+                child: CategoryPicker(
+                  onAdd: (product) => ref.read(newBillProvider.notifier).addProduct(product),
+                ),
+              ),
+              if (billState.lines.isNotEmpty)
+                _CompactCartBar(
+                  count: billState.lines.length,
+                  totalPaise: billState.grandTotalPaise,
+                  onReview: () => setState(() => _showBill = true),
+                ),
+            ] else ...[
+              // Bill mode: everything scrolls, only the Issue button stays pinned.
+              Expanded(
+                child: ListView(
+                  keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
+                  children: [
+                    _partyBar(billState, l10n),
+                    if (billState.party == null) ...[
+                      const SizedBox(height: 10),
+                      const _CustomerNameField(),
+                    ],
+                    if (billState.error != null) ...[
+                      const SizedBox(height: 10),
+                      _errorBanner(billState),
+                    ],
+                    const SizedBox(height: 16),
+                    Text(
+                      'Bill (${billState.lines.length} items)',
+                      style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
+                    ),
+                    const SizedBox(height: 10),
+                    for (var i = 0; i < billState.lines.length; i++)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 10),
+                        child: _cartLine(billState, i, tabularStyle),
+                      ),
+                    const SizedBox(height: 6),
+                    const _BillSummary(tabularStyle: tabularStyle),
+                  ],
+                ),
+              ),
+              const _IssueBar(),
+            ],
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _partyBar(NewBillState billState, AppLocalizations l10n) {
+    return Material(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(16),
                 child: InkWell(
@@ -428,35 +488,23 @@ class _NewBillPageState extends ConsumerState<NewBillPage> {
                     ),
                   ),
                 ),
-              ),
-            ),
+              );
+  }
 
-            if (billState.party == null && !showPicker) const _CustomerNameField(),
-
-            if (billState.error != null)
-              Container(
+  Widget _errorBanner(NewBillState billState) {
+    return Container(
                 width: double.infinity,
-                margin: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-                padding: const EdgeInsets.all(8),
+                                padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(color: AppColors.dueBg, borderRadius: BorderRadius.circular(14)),
                 child: Text(
                   billState.error!,
                   style: const TextStyle(color: AppColors.lightDanger, fontWeight: FontWeight.w800),
                   textAlign: TextAlign.center,
                 ),
-              ),
+              );
+  }
 
-            // Cart Items List
-            Expanded(
-              child: showPicker
-                  ? CategoryPicker(
-                      onAdd: (product) => ref.read(newBillProvider.notifier).addProduct(product),
-                    )
-                  : ListView.separated(
-                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-                      itemCount: billState.lines.length,
-                      separatorBuilder: (ctx, idx) => const SizedBox(height: 8),
-                      itemBuilder: (ctx, index) {
+  Widget _cartLine(NewBillState billState, int index, TextStyle tabularStyle) {
                         final line = billState.lines[index];
                         final lineTotal = divideRoundHalfUp(line.qtyMilli * line.ratePaise, 1000) - line.discountPaise;
 
@@ -573,23 +621,6 @@ class _NewBillPageState extends ConsumerState<NewBillPage> {
                             ),
                           ),
                         ));
-                      },
-                    ),
-            ),
-
-            // Bottom Summary & Payment Section
-            if (billState.lines.isNotEmpty)
-              showPicker
-                  ? _CompactCartBar(
-                      count: billState.lines.length,
-                      totalPaise: billState.grandTotalPaise,
-                      onReview: () => setState(() => _showBill = true),
-                    )
-                  : const _BottomTaxAndPaymentSection(tabularStyle: tabularStyle),
-          ],
-        ],
-      ),
-    );
   }
 }
 
@@ -762,16 +793,16 @@ class _SelectPartySheetState extends ConsumerState<_SelectPartySheet> {
   }
 }
 
-class _BottomTaxAndPaymentSection extends ConsumerStatefulWidget {
+class _BillSummary extends ConsumerStatefulWidget {
   final TextStyle tabularStyle;
 
-  const _BottomTaxAndPaymentSection({required this.tabularStyle});
+  const _BillSummary({required this.tabularStyle});
 
   @override
-  ConsumerState<_BottomTaxAndPaymentSection> createState() => _BottomTaxAndPaymentSectionState();
+  ConsumerState<_BillSummary> createState() => _BillSummaryState();
 }
 
-class _BottomTaxAndPaymentSectionState extends ConsumerState<_BottomTaxAndPaymentSection> {
+class _BillSummaryState extends ConsumerState<_BillSummary> {
   final _paidAmountController = TextEditingController();
 
   @override
@@ -850,21 +881,9 @@ class _BottomTaxAndPaymentSectionState extends ConsumerState<_BottomTaxAndPaymen
       _paidAmountController.text = defaultPaidRupees;
     }
 
-    return Container(
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withAlpha(20),
-            blurRadius: 8,
-            offset: const Offset(0, -2),
-          ),
-        ],
-      ),
-      child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
+    return SoftCard(
+      padding: const EdgeInsets.all(16),
+      child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               // Tax Breakdown Summary (Live calculateTax)
@@ -929,14 +948,17 @@ class _BottomTaxAndPaymentSectionState extends ConsumerState<_BottomTaxAndPaymen
               const SizedBox(height: 12),
 
               // Payment Method Chips
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Text(l10n.paymentMethod, style: Theme.of(context).textTheme.bodySmall),
+              ),
+              const SizedBox(height: 8),
               Row(
                 children: [
-                  Text('${l10n.paymentMethod}: ', style: Theme.of(context).textTheme.bodySmall),
-                  const SizedBox(width: 8),
                   Expanded(
                     child: Wrap(
-                      spacing: 6,
-                      runSpacing: 4,
+                      spacing: 8,
+                      runSpacing: 8,
                       children: [
                           _PaymentChip(
                             label: l10n.cash,
@@ -1015,9 +1037,33 @@ class _BottomTaxAndPaymentSectionState extends ConsumerState<_BottomTaxAndPaymen
                     ),
                 ],
               ),
-              const SizedBox(height: 16),
+            ],
+      ),
+    );
+  }
+}
 
-              // Issue Invoice Button (Disabled when saving to prevent double-tap)
+class _IssueBar extends ConsumerWidget {
+  const _IssueBar();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    final billState = ref.watch(newBillProvider);
+    return Container(
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        boxShadow: [
+          BoxShadow(color: Colors.black.withAlpha(20), blurRadius: 10, offset: const Offset(0, -2)),
+        ],
+      ),
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
               SizedBox(
                 width: double.infinity,
                 height: 52, // 48px+ touch target
