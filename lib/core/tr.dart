@@ -15,7 +15,7 @@ const Map<String, String> kEnglish = {
   'Purana udhar alert': 'Old dues alert',
   '30 din se zyada baaki bills ka reminder': 'Reminder for bills unpaid for over 30 days',
   '7 din se backup na liya ho to yaad dilao': 'Remind me if no backup for 7 days',
-  'Ye notifications app khulne aur band hone par update hote hain, aur upar wale "Kab bhejna hai" time par aate hain.': 'These notifications update when the app opens and closes, and arrive at the "Send at" time above.',
+  'Har notification ka time alag set kar sakte ho. Jo notification nahi chahiye use band kar do.': 'You can set a separate time for each notification. Turn off the ones you do not want.',
   'Total bakaya': 'Total due',
   'Bina bill kiye rate bhejo': 'Send rates without billing',
   'Kahan gaya': 'Where it went',

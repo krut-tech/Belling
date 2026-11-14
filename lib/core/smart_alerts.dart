@@ -7,7 +7,7 @@ import '../data/database.dart';
 import '../data/repositories/document_repository.dart';
 import '../data/repositories/product_repository.dart';
 import 'money.dart';
-import 'reminder_service.dart';
+import 'reminder_plan.dart';
 
 /// Three extra one-time notifications, re-planned whenever the app opens or
 /// goes to the background: low stock, old unpaid bills, and "take a backup".
@@ -43,6 +43,18 @@ class SmartAlerts {
   Future<void> setOn(AppDatabase db, String key, bool on) async {
     await db.into(db.appSettingsTable).insertOnConflictUpdate(
           AppSettingsTableCompanion.insert(key: key, value: on ? '1' : '0'),
+        );
+  }
+
+  /// Hour (6-21) this alert is sent at. Each alert has its own time.
+  Future<int> hourFor(AppDatabase db, String key) async {
+    final h = int.tryParse(await _get(db, '${key}_hour') ?? '');
+    return h == null ? 10 : clampHour(h);
+  }
+
+  Future<void> setHourFor(AppDatabase db, String key, int hour) async {
+    await db.into(db.appSettingsTable).insertOnConflictUpdate(
+          AppSettingsTableCompanion.insert(key: '${key}_hour', value: '${clampHour(hour)}'),
         );
   }
 
@@ -93,13 +105,13 @@ class SmartAlerts {
   Future<void> refresh(AppDatabase db, ProductRepository products, DocumentRepository documents) async {
     try {
       await _init();
-      final hour = await ReminderService.instance.hour(db);
       final loc = tz.getLocation('Asia/Kolkata');
       final now = tz.TZDateTime.now(loc);
 
       // 1. Low stock
       await _plugin.cancel(_lowStockId);
       if (await isOn(db, lowStockKey)) {
+        final hour = await hourFor(db, lowStockKey);
         final all = await products.watchProducts().first;
         final low = all.where((p) => p.isLowStock).map((p) => p.product.name).toList();
         if (low.isNotEmpty) {
@@ -117,6 +129,7 @@ class SmartAlerts {
       // 2. Old unpaid bills
       await _plugin.cancel(_oldDuesId);
       if (await isOn(db, oldDuesKey)) {
+        final hour = await hourFor(db, oldDuesKey);
         final overview = await documents.watchBillsOverview().first;
         final cutoff = DateTime.now().subtract(const Duration(days: oldDueDays));
         final parties = <String>{};
@@ -143,6 +156,7 @@ class SmartAlerts {
       // 3. Backup
       await _plugin.cancel(_backupId);
       if (await isOn(db, backupKey)) {
+        final hour = await hourFor(db, backupKey);
         final last = int.tryParse(await _get(db, lastBackupKey) ?? '');
         final due = last == null
             ? now.add(const Duration(days: 2))

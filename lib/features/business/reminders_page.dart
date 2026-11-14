@@ -235,6 +235,7 @@ class _SmartAlertsCard extends ConsumerStatefulWidget {
 
 class _SmartAlertsCardState extends ConsumerState<_SmartAlertsCard> {
   final _on = <String, bool>{};
+  final _hour = <String, int>{};
   bool _loaded = false;
 
   static const _keys = [SmartAlerts.lowStockKey, SmartAlerts.oldDuesKey, SmartAlerts.backupKey];
@@ -249,6 +250,7 @@ class _SmartAlertsCardState extends ConsumerState<_SmartAlertsCard> {
     final db = ref.read(databaseProvider);
     for (final k in _keys) {
       _on[k] = await SmartAlerts.instance.isOn(db, k);
+      _hour[k] = await SmartAlerts.instance.hourFor(db, k);
     }
     if (mounted) setState(() => _loaded = true);
   }
@@ -269,15 +271,37 @@ class _SmartAlertsCardState extends ConsumerState<_SmartAlertsCard> {
     await SmartAlerts.instance.refresh(db, ref.read(productRepositoryProvider), ref.read(documentRepositoryProvider));
   }
 
+  Future<void> _pickTime(String key) async {
+    final t = await showTimePicker(context: context, initialTime: TimeOfDay(hour: _hour[key] ?? 10, minute: 0));
+    if (t == null) return;
+    final db = ref.read(databaseProvider);
+    await SmartAlerts.instance.setHourFor(db, key, t.hour);
+    final h = await SmartAlerts.instance.hourFor(db, key);
+    setState(() => _hour[key] = h);
+    await SmartAlerts.instance.refresh(db, ref.read(productRepositoryProvider), ref.read(documentRepositoryProvider));
+  }
+
   Widget _tile(String key, IconData icon, Color color, Color bg, String title, String sub) {
-    return SwitchListTile(
-      secondary: IconTile(icon: icon, color: color, background: bg),
-      activeTrackColor: AppColors.accent,
-      title: Text(title, style: const TextStyle(fontWeight: FontWeight.w800)),
-      subtitle: Text(sub),
-      value: _on[key] ?? false,
-      onChanged: (v) => _toggle(key, v),
-    );
+    final on = _on[key] ?? false;
+    return Column(children: [
+      SwitchListTile(
+        secondary: IconTile(icon: icon, color: color, background: bg),
+        activeTrackColor: AppColors.accent,
+        title: Text(title, style: const TextStyle(fontWeight: FontWeight.w800)),
+        subtitle: Text(sub),
+        value: on,
+        onChanged: (v) => _toggle(key, v),
+      ),
+      if (on)
+        ListTile(
+          dense: true,
+          contentPadding: const EdgeInsets.fromLTRB(72, 0, 16, 0),
+          title: const Text('Kab bhejna hai'),
+          trailing: Text('${(_hour[key] ?? 10).toString().padLeft(2, '0')}:00',
+              style: const TextStyle(fontWeight: FontWeight.w800)),
+          onTap: () => _pickTime(key),
+        ),
+    ]);
   }
 
   @override
@@ -297,7 +321,7 @@ class _SmartAlertsCardState extends ConsumerState<_SmartAlertsCard> {
           const Padding(
             padding: EdgeInsets.fromLTRB(16, 4, 16, 8),
             child: Text(
-              'Ye notifications app khulne aur band hone par update hote hain, aur upar wale "Kab bhejna hai" time par aate hain.',
+              'Har notification ka time alag set kar sakte ho. Jo notification nahi chahiye use band kar do.',
               style: TextStyle(fontSize: 12, color: AppColors.lightMuted),
             ),
           ),
