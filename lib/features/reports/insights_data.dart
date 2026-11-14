@@ -1,7 +1,5 @@
-import 'package:drift/drift.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../data/database.dart';
 import '../../data/providers.dart';
 import '../../data/repositories/product_repository.dart';
 import 'reports_providers.dart';
