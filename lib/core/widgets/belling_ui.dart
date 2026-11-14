@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart' hide Text;
 import '../theme/app_colors.dart';
 import '../tr_text.dart';
+import 'motion.dart';
 
 /// Shared building blocks for the Belling 2.0 look
 /// (cream background, indigo hero cards, saffron gradient actions).
@@ -68,9 +69,11 @@ class SoftCard extends StatelessWidget {
       ),
     );
     if (onTap == null) return box;
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(borderRadius: BorderRadius.circular(22), onTap: onTap, child: box),
+    return PressScale(
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(borderRadius: BorderRadius.circular(22), onTap: onTap, child: box),
+      ),
     );
   }
 }
@@ -317,21 +320,47 @@ class PillNavBar extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.fromLTRB(14, 0, 14, 12),
         child: Container(
-          height: 66,
-          padding: const EdgeInsets.symmetric(horizontal: 8),
+          height: 68,
           decoration: BoxDecoration(
             color: Colors.white.withValues(alpha: 0.97),
             borderRadius: BorderRadius.circular(26),
             border: Border.all(color: AppColors.lightBorder),
             boxShadow: const [BoxShadow(color: Color(0x2914152B), blurRadius: 34, offset: Offset(0, 14))],
           ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              for (var i = 0; i < items.length; i++)
-                _PillItem(item: items[i], selected: i == index, onTap: () => onSelected(i)),
-            ],
-          ),
+          child: LayoutBuilder(builder: (context, c) {
+            final slot = (c.maxWidth - 8) / items.length;
+            return Stack(
+              children: [
+                // Magnetic indicator: slides to the chosen tab with a soft overshoot.
+                AnimatedPositioned(
+                  duration: const Duration(milliseconds: 420),
+                  curve: Curves.easeOutBack,
+                  left: 4 + slot * index,
+                  top: 6,
+                  width: slot,
+                  height: 56,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: AppColors.accentGradient,
+                      borderRadius: BorderRadius.circular(22),
+                      boxShadow: const [BoxShadow(color: Color(0x66FF6A1F), blurRadius: 18, offset: Offset(0, 8))],
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  child: Row(
+                    children: [
+                      for (var i = 0; i < items.length; i++)
+                        Expanded(
+                          child: _PillItem(item: items[i], selected: i == index, onTap: () => onSelected(i)),
+                        ),
+                    ],
+                  ),
+                ),
+              ],
+            );
+          }),
         ),
       ),
     );
@@ -344,43 +373,55 @@ class PillNavItem {
   const PillNavItem(this.icon, this.label);
 }
 
-class _PillItem extends StatelessWidget {
+class _PillItem extends StatefulWidget {
   final PillNavItem item;
   final bool selected;
   final VoidCallback onTap;
   const _PillItem({required this.item, required this.selected, required this.onTap});
 
   @override
+  State<_PillItem> createState() => _PillItemState();
+}
+
+class _PillItemState extends State<_PillItem> {
+  bool _down = false;
+
+  @override
   Widget build(BuildContext context) {
+    final selected = widget.selected;
     return Semantics(
       button: true,
       selected: selected,
-      label: item.label,
+      label: widget.item.label,
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
-        onTap: onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
+        onTapDown: (_) => setState(() => _down = true),
+        onTapCancel: () => setState(() => _down = false),
+        onTapUp: (_) => setState(() => _down = false),
+        onTap: widget.onTap,
+        child: AnimatedScale(
+          scale: _down ? 0.88 : (selected ? 1.06 : 1),
+          duration: const Duration(milliseconds: 160),
           curve: Curves.easeOutCubic,
-          constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
-          padding: EdgeInsets.symmetric(horizontal: selected ? 16 : 10, vertical: 11),
-          decoration: BoxDecoration(
-            gradient: selected ? AppColors.accentGradient : null,
-            borderRadius: BorderRadius.circular(999),
-            boxShadow: selected
-                ? const [BoxShadow(color: Color(0x66FF6A1F), blurRadius: 18, offset: Offset(0, 8))]
-                : null,
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(item.icon, size: 22, color: selected ? Colors.white : AppColors.lightMuted),
-              if (selected) ...[
-                const SizedBox(width: 6),
-                Text(item.label,
-                    style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w800)),
+          child: SizedBox(
+            height: 68,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(widget.item.icon, size: 22, color: selected ? Colors.white : AppColors.lightMuted),
+                if (selected)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 2),
+                    child: Text(
+                      widget.item.label,
+                      maxLines: 1,
+                      overflow: TextOverflow.fade,
+                      softWrap: false,
+                      style: const TextStyle(color: Colors.white, fontSize: 10.5, fontWeight: FontWeight.w800),
+                    ),
+                  ),
               ],
-            ],
+            ),
           ),
         ),
       ),

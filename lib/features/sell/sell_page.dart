@@ -97,8 +97,10 @@ class SellPage extends ConsumerWidget {
                           ],
                         ),
                         const SizedBox(height: 6),
-                        Text(
-                          formatRupees(salesPaise),
+                        CountUp(
+                          value: salesPaise,
+                          builder: (context, v) => Text(
+                          formatRupees(v),
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 38,
@@ -106,7 +108,7 @@ class SellPage extends ConsumerWidget {
                             letterSpacing: -0.8,
                             fontFeatures: [FontFeature.tabularFigures()],
                           ),
-                        ),
+                        )),
                         const SizedBox(height: 14),
                         const Divider(height: 1, color: Color(0x26FFFFFF)),
                         const SizedBox(height: 12),

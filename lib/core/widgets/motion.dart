@@ -157,3 +157,20 @@ class _PressScaleState extends State<PressScale> {
     );
   }
 }
+
+/// Animates an integer from its previous value to [value] (count-up effect).
+class CountUp extends StatelessWidget {
+  const CountUp({super.key, required this.value, required this.builder});
+  final int value;
+  final Widget Function(BuildContext context, int value) builder;
+
+  @override
+  Widget build(BuildContext context) {
+    return TweenAnimationBuilder<double>(
+      tween: Tween<double>(end: value.toDouble()),
+      duration: const Duration(milliseconds: 700),
+      curve: Curves.easeOutCubic,
+      builder: (context, v, _) => builder(context, v.round()),
+    );
+  }
+}
